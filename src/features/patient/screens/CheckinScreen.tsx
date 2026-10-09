@@ -8,6 +8,7 @@ import { IconTile } from '@/shared/icons/AppIcon';
 import { EVA_FACES, PainFace } from '@/shared/icons/PainFace';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import type { CheckInRecord, DoseChoice } from '@/features/patient/types';
+import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
@@ -41,6 +42,7 @@ export function CheckinScreen() {
   const { palette } = useTheme();
   const navigation = useNavigation();
   const { data, saveCheckIn } = usePatientSession();
+  const medications = useMemo(() => activeMedications(data.medications), [data.medications]);
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>({
     emergency: null,
@@ -50,7 +52,7 @@ export function CheckinScreen() {
     zones: [],
     mood: '',
     sleep: '',
-    doses: Object.fromEntries(data.medications.map((m) => [m.id, 'indicated' as DoseChoice])),
+    doses: Object.fromEntries(medications.map((m) => [m.id, 'indicated' as DoseChoice])),
   });
 
   const blockers = useMemo(() => stepBlockers(step, draft), [step, draft]);
@@ -74,7 +76,7 @@ export function CheckinScreen() {
       sleep: draft.sleep || undefined,
       emergency: draft.emergency,
       registrant: draft.registrant,
-      doses: data.medications.map((m) => ({
+      doses: medications.map((m) => ({
         medId: m.id,
         choice: draft.doses[m.id] ?? 'indicated',
       })),
@@ -257,14 +259,19 @@ export function CheckinScreen() {
             <IconTile name="pill" color={palette.primary} background={palette.primarySoft} size={36} iconSize={18} />
             <Text style={[styles.label, { marginBottom: 0, color: palette.text }]}>Medicamentos de hoy</Text>
           </View>
-          {data.medications.length === 0 ? (
+          {medications.length === 0 ? (
             <Text style={{ color: palette.textMuted, lineHeight: 22 }}>
               Tu médico aún no registra medicamentos activos. Puedes continuar.
             </Text>
           ) : (
-            data.medications.map((med) => (
+            medications.map((med) => (
               <View key={med.id} style={{ marginBottom: 16 }}>
-                <Text style={[styles.label, { color: palette.text }]}>{med.name}</Text>
+                <Text style={[styles.label, { color: palette.text, marginBottom: 2 }]}>
+                  {medicationTitle(med)}
+                </Text>
+                <Text style={{ color: palette.textMuted, fontSize: 13, lineHeight: 20, marginBottom: 8 }}>
+                  {medicationDetail(med)}
+                </Text>
                 <View style={styles.rowWrap}>
                   {(
                     [

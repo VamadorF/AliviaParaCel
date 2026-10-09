@@ -1,7 +1,22 @@
+export type MedicationStatus = 'activo' | 'suspendido' | 'finalizado';
+
 export type Medication = {
   id: string;
+  /** Nombre comercial o genÃ©rico, sin concentraciÃ³n (ej. "Paracetamol"). */
   name: string;
-  active: boolean;
+  /** ConcentraciÃ³n (ej. "500 mg"). */
+  concentration: string;
+  /** Forma farmacÃ©utica (ej. "Comprimido"). */
+  form: string;
+  /** Cantidad por toma (ej. "1 comprimido"). */
+  quantity: string;
+  /** VÃ­a de administraciÃ³n (ej. "Oral"). */
+  route: string;
+  /** Frecuencia (ej. "Cada 8 horas"). */
+  frequency: string;
+  /** DuraciÃ³n del tratamiento (ej. "30 dÃ­as", "Uso continuo"). */
+  duration: string;
+  status: MedicationStatus;
 };
 
 export type DoseChoice = 'indicated' | 'more' | 'less' | 'skipped';
