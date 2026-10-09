@@ -1,6 +1,23 @@
 import type { PatientBootstrap } from '@/features/patient/types';
+import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
+  return {
+    ...base,
+    checkIns: [...base.checkIns],
+    messages: [...base.messages],
+    posts: [...base.posts],
+    medications: [...base.medications],
+    appointment: base.appointment ? { ...base.appointment } : null,
+    instruction: base.instruction ? { ...base.instruction } : null,
+  };
+}
+
+export function fixtureForProfile(profile: PatientProfileKind): PatientBootstrap {
+  return cloneBootstrap(profile === 'demo' ? DEMO_BOOTSTRAP : CLEAN_BOOTSTRAP);
+}
 
 export const DEMO_BOOTSTRAP: PatientBootstrap = {
   medications: [

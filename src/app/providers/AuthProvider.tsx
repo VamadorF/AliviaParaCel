@@ -5,12 +5,8 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { MOCK_LOGIN_DELAY_MS } from '@/app/config/constants';
-import {
-  DEMO_USER,
-  findUserByRut,
-  type MockUser,
-} from '@/shared/mocks/users.mock';
+import { fetchDemoUser, resolveUserByRut } from '@/features/auth/api/authApi';
+import type { MockUser } from '@/shared/mocks/users.mock';
 import { isValidRut } from '@/shared/data/rut';
 
 type AuthContextValue = {
@@ -32,8 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('RUT inválido. Revisa el dígito verificador.');
     }
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, MOCK_LOGIN_DELAY_MS));
-    const match = findUserByRut(rut);
+    const match = await resolveUserByRut(rut);
     if (!match) {
       setIsLoading(false);
       throw new Error('RUT no registrado en esta beta. Usa modo demo o 15.234.678-6.');
@@ -44,8 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInAsDemo = useCallback(async () => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, MOCK_LOGIN_DELAY_MS));
-    setUser(DEMO_USER);
+    setUser(await fetchDemoUser());
     setIsLoading(false);
   }, []);
 
