@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Plantilla Móvil",
+    "slug": "plantilla-movil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./public/icon.png",
+    "scheme": "plantilla",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./public/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tuempresa.plantilla"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./public/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.tuempresa.plantilla"
+    },
+    "web": {
+      "favicon": "./public/favicon.png",
+      "bundler": "metro",
+      "output": "static"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "extra": {
+      "eas": {
+        "projectId": "REEMPLAZA_CON_TU_PROJECT_ID"
+      }
+    }
+  }
+}
