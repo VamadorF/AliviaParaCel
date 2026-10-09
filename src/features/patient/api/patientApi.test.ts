@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { appendCheckIn, loadBootstrap } from './patientApi';
+import { CLEAN_RUT, MOCK_USERS } from '@/shared/mocks/users.mock';
+import { createMemoryStorage } from '@/shared/storage/storagePort';
+import { createMockPatientRepository } from '@/features/patient/api/mockPatientRepository';
 
-describe('patientApi', () => {
-  it('usuario limpio sin check-ins', () => {
-    const data = loadBootstrap('clean');
-    expect(data.checkIns).toHaveLength(0);
-    expect(data.medications).toHaveLength(0);
-  });
+const cleanUser = MOCK_USERS.find((u) => u.rut === CLEAN_RUT)!;
 
-  it('guardar check-in agrega al inicio', () => {
-    const base = loadBootstrap('demo');
-    const next = appendCheckIn(base, {
+describe('patientApi (mock repository)', () => {
+  it('appendCheckIn agrega al inicio y persiste', async () => {
+    const patient = createMockPatientRepository({
+      storage: createMemoryStorage(),
+      delayMs: 0,
+    });
+    const base = await patient.loadBootstrap(cleanUser.id, 'clean');
+    const next = await patient.appendCheckIn(cleanUser.id, 'clean', {
       id: 'x',
       date: '2026-01-01',
       time: '10:00',
@@ -22,5 +24,8 @@ describe('patientApi', () => {
     });
     expect(next.checkIns[0].id).toBe('x');
     expect(next.checkIns.length).toBe(base.checkIns.length + 1);
+
+    const again = await patient.loadBootstrap(cleanUser.id, 'clean');
+    expect(again.checkIns[0].id).toBe('x');
   });
 });

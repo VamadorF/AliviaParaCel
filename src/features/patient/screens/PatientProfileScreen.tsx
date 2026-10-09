@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { useResetDemoDataMutation } from '@/features/patient/hooks/usePatientBootstrap';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
@@ -12,6 +13,16 @@ import { useTheme } from '@/shared/theme/ThemeContext';
 export function PatientProfileScreen() {
   const { palette, mode, toggleMode } = useTheme();
   const { user, signOut } = useAuth();
+  const resetDemo = useResetDemoDataMutation();
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  const onResetDemo = () => {
+    resetDemo.mutate(undefined, {
+      onSuccess: () => {
+        setResetMessage('Datos de demostración restablecidos');
+      },
+    });
+  };
 
   return (
     <Screen>
@@ -41,6 +52,24 @@ export function PatientProfileScreen() {
           </View>
         </View>
       </Card>
+      {user?.profile === 'demo' ? (
+        <>
+          <Button
+            label="Restablecer datos demo"
+            variant="ghost"
+            onPress={onResetDemo}
+            disabled={resetDemo.isPending}
+          />
+          {resetMessage ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={{ color: palette.primary, fontWeight: '600', marginBottom: 8 }}
+            >
+              {resetMessage}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
       <Button label="Cerrar sesión" variant="ghost" onPress={signOut} />
       <View style={{ height: 8 }} />
       <Button label="Cambiar tema" variant="ghost" onPress={toggleMode} />

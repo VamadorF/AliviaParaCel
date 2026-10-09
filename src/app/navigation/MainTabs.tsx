@@ -10,9 +10,11 @@ import { useTheme } from '@/shared/theme/ThemeContext';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function tabIcon(name: IconName) {
-  return ({ color, size }: { color: string; size: number }) => (
-    <AppIcon name={name} color={color} size={size} />
-  );
+  function TabIcon({ color, size }: { color: string; size: number }) {
+    return <AppIcon name={name} color={color} size={size} />;
+  }
+  TabIcon.displayName = `TabIcon(${name})`;
+  return TabIcon;
 }
 
 export function MainTabs() {
