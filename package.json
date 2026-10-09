@@ -12,6 +12,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "sync:core": "node scripts/sync-core.mjs",
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
