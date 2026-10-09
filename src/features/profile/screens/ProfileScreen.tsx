@@ -6,6 +6,7 @@ import { API_URL, IS_DEVELOPMENT } from '@/app/config/env';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { Screen } from '@/shared/components/Screen';
+import { formatRut } from '@/shared/data/rut';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 export function ProfileScreen() {
@@ -19,9 +20,8 @@ export function ProfileScreen() {
         <Text style={[styles.name, { color: palette.text }]}>
           {user?.name ?? '—'}
         </Text>
-        <Text style={{ color: palette.textMuted }}>{user?.email}</Text>
-        <Text style={[styles.meta, { color: palette.textMuted }]}>
-          Token mock: {user?.token}
+        <Text style={{ color: palette.textMuted }}>
+          {user ? formatRut(user.rut) : '—'}
         </Text>
       </Card>
 

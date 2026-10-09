@@ -1,51 +1,111 @@
-# Plantilla móvil (Expo + Metro)
+# AlivIA para celular (AliviaParaCel)
 
-App vacía con **mocks editables** para arrancar proyectos en celular. Basada en la guía `expo-y-metro-plantilla.md`.
+App móvil del **portal paciente de AlivIA**, construida con Expo y React Native. Es la versión para celular de [AlivIACare](../AlivIACare) (la plataforma web), pensada para que las personas con dolor crónico registren cómo están desde el teléfono, en pocos toques y sin depender del computador.
 
-## Arranque rápido
+> **Estado actual: beta solo paciente, con datos de prueba (mocks) locales.** La app todavía no se conecta a AlivIACare ni guarda información real.
+
+## Objetivo del proyecto
+
+AlivIA acompaña a personas con **dolor crónico en Chile** y a sus equipos de salud. La web AlivIACare cubre al paciente, al médico y a la clínica; AliviaParaCel lleva **la parte del paciente** al lugar donde realmente ocurre el día a día: el celular.
+
+El objetivo es que el paciente pueda:
+
+1. **Registrar su bienestar diario** — dolor, síntomas y medicación — mediante un check-in guiado por pasos, corto y sin fricción.
+2. **Ver su historial y la orientación de su equipo**, para entender su evolución y seguir las indicaciones.
+3. **Comunicarse con AlivIA** (y con su médico cuando el canal esté habilitado) y acceder a contenido de comunidad.
+
+Esos registros son los que, en una fase posterior, alimentarán a AlivIACare para que el equipo clínico tenga datos frecuentes y confiables entre consultas.
+
+### Para quién
+
+Personas con dolor crónico y sus cuidadores. Muchas usan el teléfono **con una sola mano**, tienen **baja visión** o **poca confianza con la tecnología**, y los días de más dolor tienen poca energía para formularios largos. Por eso la accesibilidad no es un extra: es una condición de seguridad.
+
+### Principios de diseño
+
+- **Calma por defecto**: una acción principal por pantalla.
+- **Clínico, no "wellness" genérico**: lenguaje adulto, sin frases motivacionales vacías.
+- **Accesible es seguro**: objetivo WCAG 2.2 AA en móvil, áreas táctiles de 44/48 px y etiquetas visibles.
+- **Usuario nuevo limpio**: si alguien no tiene historial, se muestra un estado vacío honesto, nunca datos inventados.
+- **Identidad por RUT chileno** y textos en español latinoamericano.
+- El paciente **no** ve notas clínicas internas del equipo.
+
+Detalle completo en [PRODUCT.md](./PRODUCT.md) y [DESIGN.md](./DESIGN.md).
+
+## Qué incluye la beta
+
+- **Ingreso por RUT** (validado) o modo demo.
+- Cuatro pestañas: **Diario**, **AlivIA**, **Comunidad** y **Perfil**.
+- **Check-in en 7 pasos** desde Diario.
+- Datos de prueba editables en `src/shared/mocks/`.
+
+### Usuarios de prueba
+
+| Perfil | RUT | Para qué sirve |
+| --- | --- | --- |
+| Demo (Constanza) | `9.876.543-3` o botón "Entrar en modo demo" | Ver la app con historial y datos de ejemplo |
+| Paciente nuevo | `15.234.678-6` | Ver la experiencia de alguien sin registros |
+
+### Fuera de alcance por ahora
+
+Conexión real a la API de AlivIACare (Prisma), vistas de médico, clínica y administración, exportación FHIR/PDF, integración con OpenAI y publicación en tiendas (EAS production).
+
+## Cómo ejecutarla
+
+Requisitos: Node.js y npm. Para probar en el teléfono, la app **[Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent)** (SDK 54).
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-En la terminal de Expo: **`a`** Android, **`i`** iOS, **`w`** web. Compatible con **Expo Go** (sin módulos nativos extra).
+En Windows con PowerShell usa `npm.cmd` en lugar de `npm` (por ejemplo `npm.cmd run dev`), porque la política de ejecución bloquea `npm.ps1`.
 
-## Dónde editar los mocks
+`npm run dev` levanta Metro en el puerto **8083**, configura `adb` y deja activo `adb reverse` si hay un Android conectado por USB.
 
-| Archivo | Contenido |
-|---------|-----------|
-| `src/shared/mocks/users.mock.ts` | Usuarios y tokens de login ficticio |
-| `src/shared/mocks/weather.mock.ts` | Ciudad, temperatura y pronóstico |
-| `src/features/home/api/weatherApi.ts` | Punto para sustituir `fetch` real |
-| `.env` (copia desde `.env.example`) | `EXPO_PUBLIC_*` |
+Para abrir la app en el teléfono, cualquiera de estas opciones:
 
-## Estructura
+- **USB**: con Metro corriendo, en otra terminal ejecuta `npm run open:android`.
+- **Wi‑Fi**: escanea el código QR de la terminal con Expo Go (PC y teléfono en la misma red).
+- **Manual**: en Expo Go, "Enter URL" → `exp://127.0.0.1:8083` (requiere USB).
+- **Redes restrictivas**: `npm run dev:tunnel` y escanea el QR.
 
-```
-src/app/          → bootstrap, providers, navegación
-src/features/     → auth, home, profile
-src/shared/       → componentes, tema, i18n, mocks
-```
-
-## Personalizar para tu producto
-
-1. Renombra en `app.json`: `name`, `slug`, `bundleIdentifier`, `package`.
-2. Sustituye iconos en `public/` (`icon.png`, `splash.png`, etc.).
-3. Añade pantallas en `src/features/<nombre>/` y regístralas en `MainTabs` o un stack nuevo.
-4. Para builds nativos: `npx expo prebuild` (genera `android/` e `ios/`, ignorados en git).
+En la terminal de Metro, `w` abre la versión web. Evita la tecla `a`: si Expo Go no está instalado, intenta descargarlo y suele fallar con `TypeError: fetch failed`.
 
 ## Scripts
 
 | Comando | Descripción |
-|---------|-------------|
-| `npm start` | Metro + Expo Dev Tools |
-| `npm run android` | Compilar/ejecutar Android |
-| `npm run ios` | Compilar/ejecutar iOS (macOS) |
-| `npm run web` | Vista web con Metro |
+| --- | --- |
+| `npm run dev` | Metro en el puerto 8083 con `adb` configurado |
+| `npm run dev:tunnel` | Igual, pero con túnel de Expo |
+| `npm run open:android` | Abre el proyecto en Expo Go por USB |
+| `npm start` | Metro estándar de Expo |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest |
+| `npm test` | Pruebas unitarias con Vitest (RUT y `patientApi`) |
+| `npm run test:e2e` | Pruebas de humo con Playwright sobre la versión web |
+| `npm run test:e2e:ui` | Playwright en modo interfaz |
 
-## Documentación interna
+## Estructura
 
-Ver [expo-y-metro-plantilla.md](./expo-y-metro-plantilla.md) para CNG, EAS, alias `@/` y checklist completo.
+```text
+src/
+  app/          navegación (tabs, stacks), providers y configuración
+  features/
+    auth/       login por RUT y modo demo
+    patient/    Diario, check-in, AlivIA, Comunidad; api/ con los mocks
+    profile/    perfil del paciente
+  shared/       componentes, tema de colores, validación de RUT, mocks
+tests/e2e/      pruebas Playwright
+scripts/        utilidades de desarrollo (Metro, adb, Expo Go)
+```
+
+Cada `src/features/*/api/` es el punto donde los mocks se reemplazarán por llamadas reales a AlivIACare.
+
+## Próximos pasos
+
+1. Conectar la API de AlivIACare (autenticación por RUT y check-ins reales).
+2. Persistencia local y uso sin conexión para registrar aunque no haya señal.
+3. Builds de desarrollo y producción con EAS.
+
+## Para colaboradores y agentes de IA
+
+Las convenciones del proyecto están en [AGENTS.md](./AGENTS.md), [PRODUCT.md](./PRODUCT.md), [DESIGN.md](./DESIGN.md) y `.cursor/skills/alivia-movil/`. La web de referencia (solo lectura) está en `../AlivIACare/src/screens/paciente/`.

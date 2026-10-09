@@ -10,6 +10,8 @@ type TextFieldProps = {
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address';
+  accessibilityHint?: string;
+  testID?: string;
 };
 
 export function TextField({
@@ -20,6 +22,8 @@ export function TextField({
   secureTextEntry,
   autoCapitalize = 'none',
   keyboardType = 'default',
+  accessibilityHint,
+  testID,
 }: TextFieldProps) {
   const { palette } = useTheme();
 
@@ -30,6 +34,10 @@ export function TextField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        accessibilityLabel={label}
+        accessibilityHint={accessibilityHint}
+        allowFontScaling
+        testID={testID}
         placeholderTextColor={palette.textMuted}
         secureTextEntry={secureTextEntry}
         autoCapitalize={autoCapitalize}

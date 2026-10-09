@@ -1,75 +1,77 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { APP_NAME } from '@/app/config/env';
 import { Button } from '@/shared/components/Button';
+import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Screen } from '@/shared/components/Screen';
 import { TextField } from '@/shared/components/TextField';
-import { DEMO_USER } from '@/shared/mocks/users.mock';
+import { BrandLockup } from '@/shared/brand/Brand';
+import { AppIcon } from '@/shared/icons/AppIcon';
+import { formatRut } from '@/shared/data/rut';
+import { DEMO_RUT } from '@/shared/mocks/users.mock';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 export function LoginScreen() {
-  const { t } = useTranslation();
-  const { palette } = useTheme();
-  const { signIn, signInAsDemo, isLoading } = useAuth();
-  const [email, setEmail] = useState(DEMO_USER.email);
-  const [password, setPassword] = useState('cualquier-clave');
+  const { palette, mode } = useTheme();
+  const { signInWithRut, signInAsDemo, isLoading } = useAuth();
+  const [rut, setRut] = useState(formatRut(DEMO_RUT));
 
   const handleSubmit = async () => {
     try {
-      await signIn(email, password);
+      await signInWithRut(rut);
     } catch (e) {
-      Alert.alert('Mock auth', (e as Error).message);
+      Alert.alert('Ingreso', (e as Error).message);
     }
   };
 
   return (
     <Screen scroll={false}>
-      <Text style={[styles.title, { color: palette.text }]}>{APP_NAME}</Text>
-      <Text style={[styles.subtitle, { color: palette.textMuted }]}>
-        {t('login.title')}
-      </Text>
+      <BetaBanner />
+      <View accessibilityRole="header" style={styles.brand}>
+        <BrandLockup size={56} fontSize={32} dark={mode === 'dark'} bg={palette.background} />
+      </View>
+      <View style={styles.subtitleRow}>
+        <AppIcon name="heart" size={18} color={palette.primary} />
+        <Text style={[styles.subtitle, { color: palette.textMuted }]}>Mi AlivIA · Pacientes</Text>
+      </View>
 
       <View style={styles.form}>
         <TextField
-          label={t('login.email')}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          placeholder="demo@plantilla.app"
-        />
-        <TextField
-          label={t('login.password')}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="••••••••"
+          label="RUT"
+          value={rut}
+          onChangeText={setRut}
+          placeholder="12.345.678-5"
+          accessibilityHint="Ingresa tu RUT chileno con dígito verificador"
+          testID="login-rut"
         />
         <Button
-          label={t('login.submit')}
+          label="Entrar con RUT"
           onPress={() => void handleSubmit()}
           loading={isLoading}
+          testID="login-submit"
         />
         <View style={styles.spacer} />
         <Button
-          label={t('login.demo')}
+          label="Entrar en modo demo"
           variant="ghost"
           onPress={() => void signInAsDemo()}
           loading={isLoading}
+          accessibilityHint="Constanza Elizondo, datos de demostración"
+          testID="login-demo"
         />
       </View>
 
       <Text style={[styles.hint, { color: palette.textMuted }]}>
-        {t('login.hint')}
+        Demo: {formatRut(DEMO_RUT)} · Usuario nuevo: 15.234.678-6
       </Text>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 28, fontWeight: '700', marginTop: 24 },
-  subtitle: { fontSize: 18, marginTop: 8, marginBottom: 32 },
+  brand: { marginTop: 12 },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 28 },
+  subtitle: { fontSize: 17 },
   form: { flex: 1 },
   spacer: { height: 12 },
   hint: { fontSize: 13, lineHeight: 20, marginTop: 24 },

@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
+import { LogoMark } from '@/shared/brand/Brand';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
@@ -25,7 +26,8 @@ function AppShell() {
           backgroundColor: palette.background,
         }}
       >
-        <ActivityIndicator color={palette.primary} />
+        <LogoMark size={72} bg={palette.background} />
+        <ActivityIndicator color={palette.primary} style={{ marginTop: 18 }} />
       </View>
     );
   }

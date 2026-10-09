@@ -2,9 +2,16 @@ export type AuthStackParamList = {
   Login: undefined;
 };
 
+export type DiarioStackParamList = {
+  DiarioHome: undefined;
+  Checkin: undefined;
+};
+
 export type MainTabParamList = {
-  Home: undefined;
-  Profile: undefined;
+  Diario: undefined;
+  AlivIA: undefined;
+  Comunidad: undefined;
+  Perfil: undefined;
 };
 
 export type RootStackParamList = {

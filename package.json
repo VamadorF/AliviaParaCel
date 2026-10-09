@@ -1,15 +1,21 @@
 {
-  "name": "plantilla-movil",
+  "name": "alivia-para-cel",
   "version": "1.0.0",
   "main": "index.js",
   "private": true,
   "scripts": {
     "start": "expo start",
+    "dev": "node scripts/expo-dev.mjs",
+    "dev:tunnel": "node scripts/expo-dev.mjs --tunnel",
+    "open:android": "node scripts/open-android.mjs",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.4.0",
@@ -29,9 +35,11 @@
     "react-native-reanimated": "~4.1.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-svg": "15.12.1",
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~10.0.0",
