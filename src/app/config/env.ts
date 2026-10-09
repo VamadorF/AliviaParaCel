@@ -6,6 +6,6 @@ export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'https://api.ejemplo.com';
 
 export const APP_NAME =
-  process.env.EXPO_PUBLIC_APP_NAME ?? 'Plantilla Móvil';
+  process.env.EXPO_PUBLIC_APP_NAME ?? 'AlivIA';
 
 export const IS_DEVELOPMENT = __DEV__;

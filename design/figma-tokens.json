@@ -1,0 +1,42 @@
+{
+  "$metadata": {
+    "tokenSetOrder": ["alivia/mobile/light"],
+    "figmaFile": "Pega aquí la URL del archivo Figma del equipo"
+  },
+  "alivia/mobile/light": {
+    "color": {
+      "background": { "value": "#eef1ec", "type": "color" },
+      "surface": { "value": "#ffffff", "type": "color" },
+      "primary": { "value": "#256e4d", "type": "color" },
+      "primarySoft": { "value": "#e6f2ec", "type": "color" },
+      "text": { "value": "#16211c", "type": "color" },
+      "textMuted": { "value": "#71807a", "type": "color" },
+      "border": { "value": "#e7ebe7", "type": "color" },
+      "danger": { "value": "#b03a44", "type": "color" },
+      "warning": { "value": "#e08a2f", "type": "color" },
+      "accent": { "value": "#4f5bc0", "type": "color" },
+      "accentSoft": { "value": "#eef2fb", "type": "color" }
+    },
+    "radius": {
+      "card": { "value": "20", "type": "dimension" },
+      "button": { "value": "14", "type": "dimension" },
+      "chip": { "value": "12", "type": "dimension" }
+    },
+    "spacing": {
+      "screenX": { "value": "20", "type": "dimension" },
+      "block": { "value": "14", "type": "dimension" },
+      "touchMin": { "value": "48", "type": "dimension" }
+    },
+    "fontSize": {
+      "title": { "value": "26", "type": "dimension" },
+      "body": { "value": "16", "type": "dimension" },
+      "meta": { "value": "12", "type": "dimension" },
+      "kicker": { "value": "11", "type": "dimension" }
+    },
+    "fontWeight": {
+      "title": { "value": "800", "type": "number" },
+      "body": { "value": "600", "type": "number" },
+      "meta": { "value": "700", "type": "number" }
+    }
+  }
+}

@@ -1,33 +1,33 @@
 {
   "expo": {
-    "name": "Plantilla Móvil",
-    "slug": "plantilla-movil",
+    "name": "AlivIA",
+    "slug": "alivia-para-cel",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./public/icon.png",
-    "scheme": "plantilla",
+    "scheme": "alivia",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./public/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0f172a"
+      "backgroundColor": "#eef1ec"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuempresa.plantilla"
+      "bundleIdentifier": "cl.alivia.paciente"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./public/adaptive-icon.png",
-        "backgroundColor": "#0f172a"
+        "backgroundColor": "#eef1ec"
       },
-      "package": "com.tuempresa.plantilla"
+      "package": "cl.alivia.paciente"
     },
     "web": {
       "favicon": "./public/favicon.png",
       "bundler": "metro",
-      "output": "static"
+      "output": "single"
     },
     "assetBundlePatterns": ["**/*"],
     "extra": {

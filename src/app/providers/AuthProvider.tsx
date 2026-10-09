@@ -8,36 +8,35 @@ import React, {
 import { MOCK_LOGIN_DELAY_MS } from '@/app/config/constants';
 import {
   DEMO_USER,
-  MOCK_USERS,
+  findUserByRut,
   type MockUser,
 } from '@/shared/mocks/users.mock';
+import { isValidRut } from '@/shared/data/rut';
 
 type AuthContextValue = {
   user: MockUser | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signInWithRut: (rut: string) => Promise<void>;
   signInAsDemo: () => Promise<void>;
   signOut: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function findMockUser(email: string): MockUser | undefined {
-  const normalized = email.trim().toLowerCase();
-  return MOCK_USERS.find((u) => u.email.toLowerCase() === normalized);
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<MockUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const signIn = useCallback(async (email: string, _password: string) => {
+  const signInWithRut = useCallback(async (rut: string) => {
+    if (!isValidRut(rut)) {
+      throw new Error('RUT inválido. Revisa el dígito verificador.');
+    }
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, MOCK_LOGIN_DELAY_MS));
-    const match = findMockUser(email);
+    const match = findUserByRut(rut);
     if (!match) {
       setIsLoading(false);
-      throw new Error('Usuario no encontrado en users.mock.ts');
+      throw new Error('RUT no registrado en esta beta. Usa modo demo o 15.234.678-6.');
     }
     setUser(match);
     setIsLoading(false);
@@ -53,8 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(() => setUser(null), []);
 
   const value = useMemo(
-    () => ({ user, isLoading, signIn, signInAsDemo, signOut }),
-    [user, isLoading, signIn, signInAsDemo, signOut],
+    () => ({ user, isLoading, signInWithRut, signInAsDemo, signOut }),
+    [user, isLoading, signInWithRut, signInAsDemo, signOut],
   );
 
   return (
