@@ -1,12 +1,31 @@
 # AGENTS.md — AliviaParaCel (beta paciente)
 
-App **Expo + React Native** para el portal paciente de AlivIA. En esta fase todo es **mock local**; no conectar a AlivIACare (`localhost:3000`, Prisma, `/api/mutate`).
+App **Expo SDK 57 + React Native 0.86** para el portal paciente de AlivIA. En esta fase todo es **mock local**; no conectar a AlivIACare (`localhost:3000`, Prisma, `/api/mutate`).
+
+## Modo mock
+
+Hoy solo hay mock. `npm run dev` levanta Metro en el puerto **8083** con `createMockAuthRepository` y `createMockPatientRepository`. No hay modo `api` ni cliente HTTP.
+
+En el teléfono, **Expo Go de Play Store para SDK 57**. La SDK 58 sigue en beta y no se usa. En PowerShell usa `npm.cmd` (`npm.cmd run dev`). En la terminal de Metro, `w` abre la versión web. Evita la tecla `a`: si Expo Go no está instalado, intenta descargarlo y suele fallar con `TypeError: fetch failed`. USB: `npm run open:android`. Redes restrictivas: `npm run dev:tunnel`.
+
+Cuentas en `src/shared/mocks/users.mock.ts` (el login las repite bajo el formulario):
+
+| Quién | RUT | Contraseña |
+| --- | --- | --- |
+| Constanza Elizondo (demo, con historial) | `9.876.543-3` | `alivia-demo` |
+| María López (nueva, sin registros) | `15.234.678-6` | `alivia-nueva` |
+
+El botón **Entrar en modo demo** entra como Constanza y no pide contraseña.
+
+**Restablecer.** Con Constanza: **Perfil → Restablecer datos demo**. Reescribe `@alivia/patient-bootstrap/v1/constanza` con el fixture de `src/shared/mocks/patient.mock.ts`. El botón aparece solo con el perfil demo. Para el fixture limpio de María, borra `@alivia/patient-bootstrap/v1/nuevo` (en el teléfono, datos de la app en Expo Go; en la web, esa clave en `localStorage`) y el siguiente ingreso lo siembra de nuevo. Cerrar sesión solo borra el token `alivia.auth.token`. El botón no vacía `@alivia/outbox/v1/` ni `@alivia/reminders/v1/`.
+
+**Fallas.** El código no permite inyectarlas. Los retrasos están fijos en `src/app/config/constants.ts`: login 800 ms (`MOCK_LOGIN_DELAY_MS`), datos del paciente 600 ms (`MOCK_PATIENT_DELAY_MS`).
 
 ## Comandos
 
 ```bash
 npm install          # solo npm
-npm start            # Metro; w = web, a = Android
+npm run dev          # Metro en 8083, mock local. PowerShell: npm.cmd run dev
 npm run lint
 npm test             # Vitest (unit)
 npm run test:e2e     # Playwright sobre Expo web (levanta Metro si hace falta)
@@ -49,6 +68,6 @@ Leer también `.cursor/skills/alivia-movil/SKILL.md`, `PRODUCT.md` y `DESIGN.md`
 - `src/features/auth/` — login RUT + demo
 - `src/shared/mocks/` — datos demo editables
 - `src/shared/data/trigger-catalog.ts` — catálogo versionado de gatillantes/alivios (no es generado; `src/shared/core/` sí lo es)
-- `src/features/*/api/` — sustituir por `fetch` real más adelante
+- `src/features/*/api/` — mock local (`createMockAuthRepository`, `createMockPatientRepository`). Hoy solo hay mock
 
 Referencia web (solo lectura): `../AlivIACare/src/screens/paciente/`.
