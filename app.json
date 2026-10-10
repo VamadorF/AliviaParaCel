@@ -16,7 +16,8 @@
         "foregroundImage": "./public/adaptive-icon.png",
         "backgroundColor": "#eef1ec"
       },
-      "package": "cl.alivia.paciente"
+      "package": "cl.alivia.paciente",
+      "permissions": ["android.permission.POST_NOTIFICATIONS"]
     },
     "web": {
       "favicon": "./public/favicon.png",
@@ -41,7 +42,14 @@
           "backgroundColor": "#eef1ec"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#256e4d",
+          "enableBackgroundRemoteNotifications": false
+        }
+      ]
     ]
   }
 }

@@ -15,6 +15,11 @@ export type MainTabParamList = {
   Perfil: undefined;
 };
 
+export type PerfilStackParamList = {
+  PerfilHome: undefined;
+  Recordatorios: undefined;
+};
+
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;

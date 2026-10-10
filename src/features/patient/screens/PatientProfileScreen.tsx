@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -9,6 +11,7 @@ import { Card } from '@/shared/components/Card';
 import { Screen } from '@/shared/components/Screen';
 import { IconTile } from '@/shared/icons/AppIcon';
 import { formatRut } from '@/shared/data/rut';
+import type { PerfilStackParamList } from '@/shared/types/navigation';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 export function PatientProfileScreen() {
@@ -16,6 +19,7 @@ export function PatientProfileScreen() {
   const { user, signOut } = useAuth();
   const resetDemo = useResetDemoDataMutation();
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<PerfilStackParamList>>();
 
   const onResetDemo = () => {
     resetDemo.mutate(undefined, {
@@ -54,6 +58,18 @@ export function PatientProfileScreen() {
         </View>
       </Card>
       <ConsentCard />
+      <Card>
+        <Text style={{ fontWeight: '800', color: palette.text }}>Recordatorios</Text>
+        <Text style={{ color: palette.textMuted, marginTop: 6, lineHeight: 21, marginBottom: 12 }}>
+          Avisos en este teléfono, sin internet: registro diario, medicamentos, consulta y horario silencioso.
+        </Text>
+        <Button
+          label="Configurar recordatorios"
+          variant="ghost"
+          onPress={() => navigation.navigate('Recordatorios')}
+          testID="reminders-open"
+        />
+      </Card>
       {user?.profile === 'demo' ? (
         <>
           <Button

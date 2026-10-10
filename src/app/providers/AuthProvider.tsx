@@ -17,6 +17,7 @@ import {
   saveSessionToken,
   setActiveUserId,
 } from '@/features/auth/session/session';
+import { clearLocalReminders } from '@/features/patient/notifications/localScheduler';
 import type { MockUser } from '@/shared/mocks/users.mock';
 import { isValidRut } from '@/shared/data/rut';
 
@@ -117,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [adopt]);
 
   const signOut = useCallback(() => {
+    void clearLocalReminders();
     void forgetSessionToken(secureTokenStorage)
       .then(() => {
         setUser(null);
