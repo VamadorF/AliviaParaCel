@@ -21,8 +21,39 @@ export function fixtureForProfile(profile: PatientProfileKind): PatientBootstrap
 
 export const DEMO_BOOTSTRAP: PatientBootstrap = {
   medications: [
-    { id: 'm1', name: 'Paracetamol 500 mg', active: true },
-    { id: 'm2', name: 'Gabapentina 300 mg', active: true },
+    {
+      id: 'm1',
+      name: 'Paracetamol',
+      concentration: '500 mg',
+      form: 'Comprimido',
+      quantity: '1 comprimido',
+      route: 'Oral',
+      frequency: 'Cada 8 horas',
+      duration: 'Uso continuo',
+      status: 'activo',
+    },
+    {
+      id: 'm2',
+      name: 'Gabapentina',
+      concentration: '300 mg',
+      form: 'Cápsula',
+      quantity: '1 cápsula',
+      route: 'Oral',
+      frequency: 'Cada noche',
+      duration: '60 días',
+      status: 'activo',
+    },
+    {
+      id: 'm3',
+      name: 'Tramadol',
+      concentration: '50 mg',
+      form: 'Cápsula',
+      quantity: '1 cápsula',
+      route: 'Oral',
+      frequency: 'Cada 12 horas',
+      duration: '14 días',
+      status: 'suspendido',
+    },
   ],
   checkIns: [
     {
