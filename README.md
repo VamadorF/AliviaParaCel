@@ -33,17 +33,19 @@ Detalle completo en [PRODUCT.md](./PRODUCT.md) y [DESIGN.md](./DESIGN.md).
 
 ## Qué incluye la beta
 
-- **Ingreso por RUT** (validado) o modo demo.
+- **Ingreso por RUT y contraseña** (validados contra los fixtures) o modo demo.
 - Cuatro pestañas: **Diario**, **AlivIA**, **Comunidad** y **Perfil**.
 - **Check-in en 7 pasos** desde Diario.
 - Datos de prueba editables en `src/shared/mocks/`.
 
 ### Usuarios de prueba
 
-| Perfil | RUT | Para qué sirve |
-| --- | --- | --- |
-| Demo (Constanza) | `9.876.543-3` o botón "Entrar en modo demo" | Ver la app con historial y datos de ejemplo |
-| Paciente nuevo | `15.234.678-6` | Ver la experiencia de alguien sin registros |
+| Perfil | RUT | Contraseña | Para qué sirve |
+| --- | --- | --- | --- |
+| Demo (Constanza) | `9.876.543-3` o botón "Entrar en modo demo" | `alivia-demo` | Ver la app con historial y datos de ejemplo |
+| Paciente nuevo | `15.234.678-6` | `alivia-nueva` | Ver la experiencia de alguien sin registros |
+
+El botón "Entrar en modo demo" no pide contraseña. Cerrar sesión borra el token del dispositivo: al reabrir la app no queda la sesión ni los datos en pantalla de quien salió.
 
 ### Fuera de alcance por ahora
 
@@ -90,7 +92,7 @@ En la terminal de Metro, `w` abre la versión web. Evita la tecla `a`: si Expo G
 src/
   app/          navegación (tabs, stacks), providers y configuración
   features/
-    auth/       login por RUT y modo demo
+    auth/       login por RUT, contraseña y modo demo
     patient/    Diario, check-in, AlivIA, Comunidad; api/ con los mocks
     profile/    perfil del paciente
   shared/       componentes, tema de colores, validación de RUT, mocks

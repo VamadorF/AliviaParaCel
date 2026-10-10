@@ -14,9 +14,9 @@ import { ThemeProvider, useTheme } from '@/shared/theme/ThemeContext';
 
 function AppShell() {
   const { palette, mode } = useTheme();
-  const { isLoading } = useAuth();
+  const { isRestoring } = useAuth();
 
-  if (isLoading) {
+  if (isRestoring) {
     return (
       <View
         style={{

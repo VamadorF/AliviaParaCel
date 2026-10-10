@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { canWriteUserCache } from '@/features/auth/session/session';
 import {
   appendPatientCheckIn,
   fetchPatientBootstrap,
@@ -7,7 +8,16 @@ import {
   setPatientConsent,
 } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
-import type { CheckInRecord, ConsentAction } from '@/features/patient/types';
+import type { CheckInRecord, ConsentAction, PatientBootstrap } from '@/features/patient/types';
+
+function cacheBootstrap(
+  queryClient: QueryClient,
+  userId: string | undefined,
+  data: PatientBootstrap,
+) {
+  if (!userId || !canWriteUserCache(userId)) return;
+  queryClient.setQueryData(patientQueryKeys.bootstrap(userId), data);
+}
 
 export function usePatientBootstrapQuery() {
   const { user } = useAuth();
@@ -27,9 +37,7 @@ export function useAppendCheckInMutation() {
     mutationFn: (record: CheckInRecord) =>
       appendPatientCheckIn(user!.id, user!.profile, record),
     onSuccess: (data) => {
-      if (user) {
-        queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), data);
-      }
+      cacheBootstrap(queryClient, user?.id, data);
     },
   });
 }
@@ -42,9 +50,7 @@ export function useSetConsentMutation() {
     mutationFn: (action: ConsentAction) =>
       setPatientConsent(user!.id, user!.profile, action, new Date().toISOString()),
     onSuccess: (data) => {
-      if (user) {
-        queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), data);
-      }
+      cacheBootstrap(queryClient, user?.id, data);
     },
   });
 }
@@ -56,9 +62,7 @@ export function useResetDemoDataMutation() {
   return useMutation({
     mutationFn: () => resetPatientDemoData(user!.id, user!.profile),
     onSuccess: (data) => {
-      if (user) {
-        queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), data);
-      }
+      cacheBootstrap(queryClient, user?.id, data);
     },
   });
 }

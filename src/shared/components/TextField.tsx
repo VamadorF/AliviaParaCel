@@ -8,6 +8,7 @@ type TextFieldProps = {
   onChangeText: (text: string) => void;
   placeholder?: string;
   secureTextEntry?: boolean;
+  autoCorrect?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address';
   accessibilityHint?: string;
@@ -20,6 +21,7 @@ export function TextField({
   onChangeText,
   placeholder,
   secureTextEntry,
+  autoCorrect,
   autoCapitalize = 'none',
   keyboardType = 'default',
   accessibilityHint,
@@ -40,6 +42,7 @@ export function TextField({
         testID={testID}
         placeholderTextColor={palette.textMuted}
         secureTextEntry={secureTextEntry}
+        autoCorrect={autoCorrect}
         autoCapitalize={autoCapitalize}
         keyboardType={keyboardType}
         style={[
