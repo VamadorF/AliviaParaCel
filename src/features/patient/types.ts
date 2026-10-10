@@ -98,6 +98,8 @@ export type ForumPost = {
   author: string;
   excerpt: string;
   at: string;
+  /** MOB-11 · Ausente o null: tema. Si tiene id, es una respuesta a ese tema. */
+  parentId?: string | null;
 };
 
 /** MOB-06 · Misma forma que ConsentState / ConsentEventRow de la web (PAC-02), sin RUT: el bootstrap ya es del paciente. */
