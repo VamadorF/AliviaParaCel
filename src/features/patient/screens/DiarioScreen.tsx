@@ -38,14 +38,16 @@ export function DiarioScreen() {
 
   const streak = useMemo(() => {
     const dates = new Set(data.checkIns.map((c) => c.date));
+    const [y, m, d0] = today.split('-').map(Number);
+    const anchor = Date.UTC(y, m - 1, d0);
     let count = 0;
     for (let i = 0; i < 30; i++) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = new Date(anchor - i * 86400000).toISOString().slice(0, 10);
       if (dates.has(d)) count++;
       else if (i > 0) break;
     }
     return count;
-  }, [data.checkIns]);
+  }, [data.checkIns, today]);
 
   const series = useMemo(() => dailyPainSeries(data.checkIns), [data.checkIns]);
   const recent = series.slice(-7);

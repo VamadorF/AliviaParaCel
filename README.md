@@ -51,7 +51,7 @@ Conexión real a la API de AlivIACare (Prisma), vistas de médico, clínica y ad
 
 ## Cómo ejecutarla
 
-Requisitos: Node.js y npm. Para probar en el teléfono, la app **[Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent)** (SDK 54).
+Requisitos: Node.js y npm. Para probar en el teléfono, la app **[Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent)** (SDK 57, la de Play Store). La SDK 58 sigue en beta y no se usa.
 
 ```bash
 npm install

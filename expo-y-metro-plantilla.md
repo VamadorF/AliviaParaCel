@@ -8,7 +8,7 @@ Este documento describe **cómo funciona Expo y Metro en este repositorio** y qu
 
 | Aspecto | Decisión en este proyecto |
 |--------|---------------------------|
-| Framework | [Expo SDK 54](https://docs.expo.dev/) sobre React Native 0.81 |
+| Framework | [Expo SDK 57](https://docs.expo.dev/) sobre React Native 0.86 |
 | Bundler | **Metro** (por defecto de Expo; también explícito para web) |
 | Punto de entrada | `index.js` → `src/app/index.tsx` |
 | Navegación | **React Navigation** (stacks nativos), **no** Expo Router |
@@ -63,7 +63,7 @@ Responsabilidades:
 
 ### Configuración por defecto
 
-Este proyecto **no tiene** `metro.config.js` ni `babel.config.js`. Expo SDK 54 incluye:
+Este proyecto **no tiene** `metro.config.js` ni `babel.config.js`. Expo SDK 57 incluye:
 
 - **`@expo/metro-config`**: resolución de módulos, assets, soporte web, etc.
 - **`babel-preset-expo`**: transpila TypeScript/JSX, activa plugins de Reanimated, etc.

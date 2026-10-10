@@ -7,12 +7,6 @@
     "icon": "./public/icon.png",
     "scheme": "alivia",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./public/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#eef1ec"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cl.alivia.paciente"
@@ -29,11 +23,24 @@
       "bundler": "metro",
       "output": "single"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "extra": {
       "eas": {
         "projectId": "REEMPLAZA_CON_TU_PROJECT_ID"
       }
-    }
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./public/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#eef1ec"
+        }
+      ]
+    ]
   }
 }
