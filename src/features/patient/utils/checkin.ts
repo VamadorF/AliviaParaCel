@@ -349,6 +349,10 @@ export function toCheckInRow(record: CheckInRecord, patientRut: string): CheckIn
     caregiverName: caregiver ? (record.caregiverName ?? '') : '',
     caregiverRelation: caregiver ? (record.caregiverRelation ?? '') : '',
     createdAt: createdAtOf(record),
+    ...(record.triggers?.length ? { triggers: record.triggers } : {}),
+    ...(record.reliefActions?.length
+      ? { reliefActions: record.reliefActions, catalogVersion: record.catalogVersion ?? CATALOG_VERSION }
+      : {}),
   };
 }
 

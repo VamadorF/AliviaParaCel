@@ -19,7 +19,7 @@ const DERIVED_SYMBOLS = [
 ];
 
 function webSrcRoot() {
-  for (const rel of ['../AlivIACare/src', '../../AlivIACare/src']) {
+  for (const rel of ['../../_wt/OLA-0-WEB/src', '../AlivIACare/src', '../../AlivIACare/src']) {
     const dir = path.resolve(ROOT, rel);
     if (fs.existsSync(path.join(dir, 'data', 'rut.ts'))) return dir;
   }
@@ -128,7 +128,27 @@ function buildCheckinRow() {
   const blocks = ['CheckInNotes', 'GiDetail', 'MedDetailEntry', 'CheckInRow'].map((name) =>
     extractInterface(bootstrap, name),
   );
-  const body = `import type { CheckInDose } from './checkin-dose';\n\n${blocks.join('\n\n')}\n`;
+  let checkInRow = blocks[3];
+  const typesSrc = (() => {
+    try {
+      return readWeb('data-source/types.ts');
+    } catch {
+      return '';
+    }
+  })();
+  const reliefLevel = typesSrc.match(/export type ReliefLevel =[^\n]+/);
+  const relief = typesSrc.match(/export interface ReliefAction[\s\S]*?\n\}/);
+  if (relief) {
+    checkInRow = checkInRow.replace(
+      /\s*createdAt: string;\s*\}/,
+      '  createdAt: string;\n  triggers?: string[];\n  reliefActions?: ReliefAction[];\n  catalogVersion?: string;\n}',
+    );
+  }
+  const parts = [blocks[0], blocks[1], blocks[2]];
+  if (reliefLevel) parts.push(reliefLevel[0]);
+  if (relief) parts.push(relief[0]);
+  parts.push(checkInRow);
+  const body = `import type { CheckInDose } from './checkin-dose';\n\n${parts.join('\n\n')}\n`;
   return withHeader(body);
 }
 
