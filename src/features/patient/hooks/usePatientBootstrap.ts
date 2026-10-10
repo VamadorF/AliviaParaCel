@@ -3,11 +3,15 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { canWriteUserCache } from '@/features/auth/session/session';
 import {
   acknowledgePatientInstruction,
+  decidePatientLinkRequest,
   fetchPatientBootstrap,
   patientRepository,
+  requestPatientAccountDeletion,
   resetPatientDemoData,
   setPatientConsent,
+  setPatientPhoto,
   submitPatientPreConsult,
+  updatePatientContact,
 } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import { flushOutbox } from '@/features/patient/sync/outbox';
@@ -85,6 +89,57 @@ export function useResetDemoDataMutation() {
 
   return useMutation({
     mutationFn: () => resetPatientDemoData(user!.id, user!.profile),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useDecideLinkRequestMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { requestId: string; status: 'Aprobado' | 'Rechazado' }) =>
+      decidePatientLinkRequest(user!.id, user!.profile, input.requestId, input.status),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useUpdateContactMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { email: string; phone: string }) =>
+      updatePatientContact(user!.id, user!.profile, input.email, input.phone),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useSetPhotoMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (photoUri: string | null) =>
+      setPatientPhoto(user!.id, user!.profile, photoUri),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useRequestAccountDeletionMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => requestPatientAccountDeletion(user!.id, user!.profile),
     onSuccess: (data) => {
       cacheBootstrap(queryClient, user?.id, data);
     },

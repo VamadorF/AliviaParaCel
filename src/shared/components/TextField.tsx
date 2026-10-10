@@ -10,7 +10,8 @@ type TextFieldProps = {
   secureTextEntry?: boolean;
   autoCorrect?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  keyboardType?: 'default' | 'email-address';
+  keyboardType?: 'default' | 'email-address' | 'phone-pad';
+  editable?: boolean;
   accessibilityHint?: string;
   testID?: string;
 };
@@ -24,6 +25,7 @@ export function TextField({
   autoCorrect,
   autoCapitalize = 'none',
   keyboardType = 'default',
+  editable = true,
   accessibilityHint,
   testID,
 }: TextFieldProps) {
@@ -45,11 +47,12 @@ export function TextField({
         autoCorrect={autoCorrect}
         autoCapitalize={autoCapitalize}
         keyboardType={keyboardType}
+        editable={editable}
         style={[
           styles.input,
           {
-            color: palette.text,
-            backgroundColor: palette.surface,
+            color: editable ? palette.text : palette.textMuted,
+            backgroundColor: editable ? palette.surface : palette.background,
             borderColor: palette.border,
           },
         ]}

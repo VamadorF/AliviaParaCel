@@ -12,6 +12,7 @@ import {
 } from '@/features/patient/assistant/assistant';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import type { Message } from '@/features/patient/types';
+import { teamHeadline } from '@/features/patient/utils/profile';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Screen } from '@/shared/components/Screen';
 import { AppIcon, IconTile } from '@/shared/icons/AppIcon';
@@ -55,6 +56,14 @@ export function AliviaScreen() {
 
   const teamAvailable = data.doctorLinked && data.messagingEnabled;
   const doctorName = data.appointment?.doctorName ?? null;
+  const teamLine = teamHeadline(data.team);
+  const linkedLabel = teamLine
+    ? teamLine
+    : data.doctorLinked
+      ? doctorName
+        ? `Médico vinculado: ${doctorName}`
+        : 'Médico vinculado'
+      : 'Sin médico vinculado';
 
   // El asistente sigue en esta sesión (MOB-09). El equipo persiste (MOB-10); sin red queda en la cola (MOB-16).
   const messages = useMemo(() => {
@@ -177,11 +186,7 @@ export function AliviaScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '800', color: palette.text }}>Mi equipo</Text>
             <Text style={{ color: palette.textMuted, fontSize: 13, fontWeight: '600', marginTop: 2 }}>
-              {data.doctorLinked
-                ? doctorName
-                  ? `Médico vinculado: ${doctorName}`
-                  : 'Médico vinculado'
-                : 'Sin médico vinculado'}
+              {linkedLabel}
             </Text>
           </View>
         </View>

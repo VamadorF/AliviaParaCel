@@ -48,4 +48,31 @@ export type PatientRepository = {
     userId: string,
     profile: PatientProfileKind,
   ) => Promise<PatientBootstrap>;
+  /** MOB-07: aprueba o rechaza una solicitud de vinculación. */
+  decideLinkRequest: (
+    userId: string,
+    profile: PatientProfileKind,
+    requestId: string,
+    status: 'Aprobado' | 'Rechazado',
+  ) => Promise<PatientBootstrap>;
+  /** MOB-07: correo y teléfono. Un correo inválido no se guarda. */
+  updateContact: (
+    userId: string,
+    profile: PatientProfileKind,
+    email: string,
+    phone: string,
+  ) => Promise<PatientBootstrap>;
+  /** MOB-07: URI local de la foto. */
+  setPhoto: (
+    userId: string,
+    profile: PatientProfileKind,
+    photoUri: string | null,
+  ) => Promise<PatientBootstrap>;
+  /**
+   * PAC-15: no borra el bootstrap. La eliminación sigue pendiente de definición legal.
+   */
+  requestAccountDeletion: (
+    userId: string,
+    profile: PatientProfileKind,
+  ) => Promise<PatientBootstrap>;
 };

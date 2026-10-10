@@ -97,6 +97,58 @@ describe('CAL-01 · mockPatientRepository (persistencia)', () => {
     expect(after.checkIns.find((c) => c.id === 'solo-local')?.sharedWithTeam).toBe(false);
   });
 
+  it('MOB-07: aprobar una solicitud persiste y suma al equipo', async () => {
+    const storage = createMemoryStorage();
+    const patient = createMockPatientRepository({ storage, delayMs: 0 });
+    const before = await patient.loadBootstrap(demoUser.id, 'demo');
+    const pending = before.linkRequests?.find((request) => request.status === 'Pendiente');
+    expect(pending).toBeTruthy();
+
+    const next = await patient.decideLinkRequest(demoUser.id, 'demo', pending!.id, 'Aprobado');
+    expect(next.linkRequests?.find((request) => request.id === pending!.id)?.status).toBe('Aprobado');
+    expect(next.team?.find((member) => member.id === pending!.requesterRut)).toMatchObject({
+      name: pending!.requesterName,
+      expiresAt: pending!.expiresAt,
+    });
+
+    const reloaded = await createMockPatientRepository({ storage, delayMs: 0 }).loadBootstrap(
+      demoUser.id,
+      'demo',
+    );
+    expect(reloaded.linkRequests?.find((request) => request.id === pending!.id)?.status).toBe(
+      'Aprobado',
+    );
+    expect(reloaded.team?.some((member) => member.name === pending!.requesterName)).toBe(true);
+    expect(reloaded.checkIns.some((checkIn) => checkIn.id === 'c1')).toBe(true);
+  });
+
+  it('MOB-07: eliminar cuenta no borra el bootstrap', async () => {
+    const storage = createMemoryStorage();
+    const patient = createMockPatientRepository({ storage, delayMs: 0 });
+    await patient.appendCheckIn(demoUser.id, 'demo', {
+      id: 'no-borrar',
+      date: '2026-10-10',
+      time: '12:00',
+      pain: 3,
+      zones: ['Lumbar'],
+      emergency: false,
+      registrant: 'self',
+      doses: [],
+    });
+
+    const after = await patient.requestAccountDeletion(demoUser.id, 'demo');
+    expect(after.checkIns.some((checkIn) => checkIn.id === 'no-borrar')).toBe(true);
+
+    const reloaded = await createMockPatientRepository({ storage, delayMs: 0 }).loadBootstrap(
+      demoUser.id,
+      'demo',
+    );
+    expect(reloaded.checkIns.some((checkIn) => checkIn.id === 'no-borrar')).toBe(true);
+    expect(reloaded.checkIns.some((checkIn) => checkIn.id === 'c1')).toBe(true);
+    expect(reloaded.medications.some((med) => med.id === 'm1')).toBe(true);
+    expect(reloaded.pathology).toBe('Fibromialgia + Depresión');
+  });
+
   it('reset demo vuelve al fixture', async () => {
     const patient = repo();
     await patient.appendCheckIn(demoUser.id, 'demo', {

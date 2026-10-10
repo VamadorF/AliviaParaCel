@@ -80,8 +80,9 @@ export function CheckinScreen() {
   const stepNumber = flow.indexOf(step) + 1;
   const stepTotal = flow.length;
   const stepAnnouncement = `Paso ${stepNumber} de ${stepTotal}`;
-  const reliefOpts = useMemo(() => reliefOptions(), []);
-  const triggerOpts = useMemo(() => triggerOptions(), []);
+  const pathology = data.pathology ?? '';
+  const reliefOpts = useMemo(() => reliefOptions(pathology), [pathology]);
+  const triggerOpts = useMemo(() => triggerOptions(pathology), [pathology]);
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility(stepAnnouncement);
   }, [stepAnnouncement]);

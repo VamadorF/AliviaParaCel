@@ -178,6 +178,30 @@ export type PatientClinic = {
   phone?: string | null;
 };
 
+/** MOB-07 · Médico del equipo. `expiresAt` solo si el vínculo es temporal. */
+export type CareTeamMember = {
+  id: string;
+  name: string;
+  specialty: string;
+  /** ISO 8601. Ausente o null: vínculo permanente, sin fecha de término. */
+  expiresAt?: string | null;
+};
+
+export type LinkRequestStatus = 'Pendiente' | 'Aprobado' | 'Rechazado';
+
+/** MOB-07 · Solicitud de vinculación. Misma decisión que la web: Aprobado o Rechazado. */
+export type LinkRequest = {
+  id: string;
+  requesterName: string;
+  requesterRut: string;
+  requesterRole: 'medico' | 'organizacion';
+  specialty?: string;
+  status: LinkRequestStatus;
+  createdAt: string;
+  /** Si se aprueba y el acceso es temporal, el equipo queda con esta fecha. */
+  expiresAt?: string | null;
+};
+
 export type PatientBootstrap = {
   medications: Medication[];
   checkIns: CheckInRecord[];
@@ -197,4 +221,15 @@ export type PatientBootstrap = {
   consent?: ConsentState;
   /** MOB-06 · Historial append-only, del más reciente al más antiguo. */
   consentHistory?: ConsentEvent[];
+  /** MOB-07 · Patología de la ficha. Ausente o null: el paciente nuevo no tiene. */
+  pathology?: string | null;
+  /** MOB-07 · Correo editable. El RUT y el nombre viven en la cuenta y no se editan aquí. */
+  email?: string;
+  phone?: string;
+  /** MOB-07 · URI local de la foto. No es una URL de servidor. */
+  photoUri?: string | null;
+  /** MOB-07 · Equipo tratante. Ausente = ninguno. */
+  team?: CareTeamMember[];
+  /** MOB-07 · Solicitudes de vinculación. Ausente = ninguna. */
+  linkRequests?: LinkRequest[];
 };

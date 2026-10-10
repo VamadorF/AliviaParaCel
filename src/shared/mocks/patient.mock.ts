@@ -28,6 +28,8 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     consent: base.consent ? { ...base.consent } : undefined,
     consentHistory: base.consentHistory ? [...base.consentHistory] : undefined,
     clinic: base.clinic ? { ...base.clinic } : base.clinic,
+    team: base.team?.map((member) => ({ ...member })),
+    linkRequests: base.linkRequests?.map((request) => ({ ...request })),
   };
 }
 
@@ -163,6 +165,29 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
     name: 'ALIVIAMVP',
     phone: '+56 2 2555 0100',
   },
+  // Misma ficha que la web: patología, contacto y los dos médicos vinculados (sin vencimiento).
+  pathology: 'Fibromialgia + Depresión',
+  email: 'constanza@correo.cl',
+  phone: '',
+  photoUri: null,
+  team: [
+    { id: '12345678-5', name: 'Dr. Jesús Fernández', specialty: 'Especialista en Dolor Crónico' },
+    { id: '13456789-9', name: 'Dra. Constanza Elizondo', specialty: 'Reumatología' },
+  ],
+  // La web siembra la bandeja vacía. Esta solicitud deja aprobar o rechazar en el mock.
+  // El vencimiento viene en el fixture: la pantalla solo lo muestra si está.
+  linkRequests: [
+    {
+      id: 'req-javier',
+      requesterName: 'Dr. Javier Fernández',
+      requesterRut: '15678234-3',
+      requesterRole: 'medico',
+      specialty: 'Algología',
+      status: 'Pendiente',
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+    },
+  ],
 };
 
 export const CLEAN_BOOTSTRAP: PatientBootstrap = {
@@ -182,4 +207,10 @@ export const CLEAN_BOOTSTRAP: PatientBootstrap = {
   messagingEnabled: false,
   doctorLinked: false,
   // Paciente nuevo sin clínica en la red: no hay teléfono de centro.
+  pathology: null,
+  email: 'nuevo.paciente@test.cl',
+  phone: '',
+  photoUri: null,
+  team: [],
+  linkRequests: [],
 };

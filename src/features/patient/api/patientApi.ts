@@ -57,3 +57,36 @@ export function resetPatientDemoData(
 ): Promise<PatientBootstrap> {
   return patientRepository.resetDemoData(userId, profile);
 }
+
+export function decidePatientLinkRequest(
+  userId: string,
+  profile: PatientProfileKind,
+  requestId: string,
+  status: 'Aprobado' | 'Rechazado',
+): Promise<PatientBootstrap> {
+  return patientRepository.decideLinkRequest(userId, profile, requestId, status);
+}
+
+export function updatePatientContact(
+  userId: string,
+  profile: PatientProfileKind,
+  email: string,
+  phone: string,
+): Promise<PatientBootstrap> {
+  return patientRepository.updateContact(userId, profile, email, phone);
+}
+
+export function setPatientPhoto(
+  userId: string,
+  profile: PatientProfileKind,
+  photoUri: string | null,
+): Promise<PatientBootstrap> {
+  return patientRepository.setPhoto(userId, profile, photoUri);
+}
+
+export function requestPatientAccountDeletion(
+  userId: string,
+  profile: PatientProfileKind,
+): Promise<PatientBootstrap> {
+  return patientRepository.requestAccountDeletion(userId, profile);
+}

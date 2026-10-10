@@ -69,7 +69,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   label: {
+    alignSelf: 'stretch',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
 });

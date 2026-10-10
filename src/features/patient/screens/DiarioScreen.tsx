@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
@@ -84,18 +84,30 @@ export function DiarioScreen() {
     <Screen>
       <BetaBanner />
       <ConsentBanner context="diario" />
-      <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
-        Mi Diario
-      </Text>
-      <Text style={[styles.sub, { color: palette.textMuted }]}>
-        Hola {firstName} · {todayLabel()}
-        {streak >= 2 ? (
-          <Text style={{ color: palette.primary, fontWeight: '700' }}>
-            {' '}
-            · Racha de {streak} días
-          </Text>
+      <View style={styles.greet}>
+        {data.photoUri ? (
+          <Image
+            source={{ uri: data.photoUri }}
+            style={styles.avatar}
+            accessibilityLabel="Foto de perfil"
+          />
         ) : null}
-      </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
+            Mi Diario
+          </Text>
+          <Text style={[styles.sub, { color: palette.textMuted }]}>
+            Hola {firstName} · {todayLabel()}
+            {data.pathology ? ` · ${data.pathology}` : ''}
+            {streak >= 2 ? (
+              <Text style={{ color: palette.primary, fontWeight: '700' }}>
+                {' '}
+                · Racha de {streak} días
+              </Text>
+            ) : null}
+          </Text>
+        </View>
+      </View>
 
       {data.appointment ? (
         <Card style={styles.block}>
@@ -350,8 +362,10 @@ export function DiarioScreen() {
 }
 
 const styles = StyleSheet.create({
+  greet: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 },
+  avatar: { width: 48, height: 48, borderRadius: 16 },
   h1: { fontSize: 26, fontWeight: '800', letterSpacing: -0.3 },
-  sub: { fontSize: 14, marginTop: 6, marginBottom: 18, lineHeight: 20 },
+  sub: { fontSize: 14, marginTop: 6, lineHeight: 20 },
   block: { marginBottom: 14 },
   kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
   cardTitle: { fontSize: 16, fontWeight: '800', marginTop: 6 },

@@ -11,6 +11,12 @@ import type { PatientRepository } from '@/features/patient/api/patientRepository
 import { applyConsent, stampSharing } from '@/features/patient/utils/consent';
 import { acknowledgeInstruction } from '@/features/patient/utils/instruction-ack';
 import { submitPreConsult as applyPreConsult } from '@/features/patient/utils/pre-consult';
+import {
+  applyContact,
+  applyPhoto,
+  decideLinkRequest as applyLinkDecision,
+  requestAccountDeletion as keepAccount,
+} from '@/features/patient/utils/profile';
 
 const STORAGE_PREFIX = '@alivia/patient-bootstrap/v1/';
 
@@ -111,6 +117,39 @@ export function createMockPatientRepository({
       const next = cloneBootstrap(fixture);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return next;
+    },
+
+    async decideLinkRequest(userId, profile, requestId, status) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      const next = applyLinkDecision(current, requestId, status);
+      if (next === current) return cloneBootstrap(current);
+      await storage.setItem(storageKey(userId), JSON.stringify(next));
+      return cloneBootstrap(next);
+    },
+
+    async updateContact(userId, profile, email, phone) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      const result = applyContact(current, email, phone);
+      if (!result.ok || result.next === current) return cloneBootstrap(current);
+      await storage.setItem(storageKey(userId), JSON.stringify(result.next));
+      return cloneBootstrap(result.next);
+    },
+
+    async setPhoto(userId, profile, photoUri) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      const next = applyPhoto(current, photoUri);
+      if (next === current) return cloneBootstrap(current);
+      await storage.setItem(storageKey(userId), JSON.stringify(next));
+      return cloneBootstrap(next);
+    },
+
+    async requestAccountDeletion(userId, profile) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      return cloneBootstrap(keepAccount(current));
     },
   };
 }
