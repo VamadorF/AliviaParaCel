@@ -6,6 +6,8 @@ on:
   pull_request:
 
 jobs:
+  # Corre siempre: lint, tsc y unitarios. Sin secretos ni base de datos.
+  # No hay script tsc; se usa npx tsc --noEmit.
   quality:
     runs-on: ubuntu-latest
     env:
@@ -20,3 +22,20 @@ jobs:
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run test:ci
+
+  # E2E web con el script existente (npm run test:e2e).
+  # Playwright arranca Expo web con el webServer de playwright.config.ts.
+  # Sin secretos ni base de datos. No se añade otro servidor.
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
