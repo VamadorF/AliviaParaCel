@@ -19,11 +19,23 @@ const DERIVED_SYMBOLS = [
 ];
 
 function webSrcRoot() {
-  for (const rel of ['../AlivIACare/src', '../../AlivIACare/src']) {
+  const fromEnv = process.env.ALIVIA_WEB_SRC;
+  if (fromEnv) {
+    const dir = path.resolve(fromEnv);
+    if (fs.existsSync(path.join(dir, 'data', 'rut.ts'))) return dir;
+  }
+  for (const rel of [
+    'AlivIACare/src', // CI: checkout del repo web en subcarpeta
+    '../../_wt/OLA-0-WEB/src',
+    '../AlivIACare/src',
+    '../../AlivIACare/src',
+  ]) {
     const dir = path.resolve(ROOT, rel);
     if (fs.existsSync(path.join(dir, 'data', 'rut.ts'))) return dir;
   }
-  throw new Error('No se encontró AlivIACare/src (esperado junto al repo móvil).');
+  throw new Error(
+    'No se encontró AlivIACare/src. En CI debe existir AlivIACare/ (checkout) o definir ALIVIA_WEB_SRC.',
+  );
 }
 
 function readWeb(rel) {
@@ -115,11 +127,41 @@ function extractBraceFunction(source, name) {
   return sliceBalancedBraces(source.slice(fnStart), open - fnStart).trimEnd();
 }
 
+function extractInterface(source, name) {
+  const start = source.indexOf(`export interface ${name} `);
+  if (start < 0) throw new Error(`${name} no encontrado`);
+  const head = source.slice(start);
+  const open = head.indexOf('{');
+  return sliceBalancedBraces(head, open).trimEnd();
+}
+
 function buildCheckinRow() {
   const bootstrap = readWeb('lib/bootstrap.ts');
-  const m = bootstrap.match(/export interface CheckInRow \{[\s\S]*?\n\}/);
-  if (!m) throw new Error('CheckInRow no encontrado en bootstrap.ts');
-  return withHeader(m[0]);
+  const blocks = ['CheckInNotes', 'GiDetail', 'MedDetailEntry', 'CheckInRow'].map((name) =>
+    extractInterface(bootstrap, name),
+  );
+  let checkInRow = blocks[3];
+  const typesSrc = (() => {
+    try {
+      return readWeb('data-source/types.ts');
+    } catch {
+      return '';
+    }
+  })();
+  const reliefLevel = typesSrc.match(/export type ReliefLevel =[^\n]+/);
+  const relief = typesSrc.match(/export interface ReliefAction[\s\S]*?\n\}/);
+  if (relief) {
+    checkInRow = checkInRow.replace(
+      /\s*createdAt: string;\s*\}/,
+      '  createdAt: string;\n  triggers?: string[];\n  reliefActions?: ReliefAction[];\n  catalogVersion?: string;\n}',
+    );
+  }
+  const parts = [blocks[0], blocks[1], blocks[2]];
+  if (reliefLevel) parts.push(reliefLevel[0]);
+  if (relief) parts.push(relief[0]);
+  parts.push(checkInRow);
+  const body = `import type { CheckInDose } from './checkin-dose';\n\n${parts.join('\n\n')}\n`;
+  return withHeader(body);
 }
 
 function buildRut() {

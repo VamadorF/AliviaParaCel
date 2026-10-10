@@ -39,11 +39,14 @@ Leer también `.cursor/skills/alivia-movil/SKILL.md`, `PRODUCT.md` y `DESIGN.md`
 - Paciente **no** ve notas clínicas internas.
 - Copy **español Latam**, tono adulto (dolor crónico).
 
+- Gatillantes y alivios (DIF-01): `CheckInRecord` lleva `triggers?: string[]`, `reliefActions?: { action, relief: 'nada'|'algo'|'mucho', text? }[]` y `catalogVersion?`, los mismos nombres que la web (`CheckInExtensions` en `AlivIACare/src/data-source/types.ts`). Son opcionales: un registro antiguo con solo `why` debe seguir leyéndose (`attributionsOf`). Valores = `id` estables del catálogo `src/shared/data/trigger-catalog.ts` v1.0 (espejo manual del catálogo web; si cambia un id, subir `CATALOG_VERSION` y revisar la web). “Otro” se guarda como `otro:texto` en gatillantes y como `{ action: 'otro', text }` en alivios. Los pasos opcionales del check-in (DIF-03) siguen las reglas de visibilidad de la web (`utils/checkin-steps.ts`). No mezclar gatillantes y alivios en una lista.
+
 ## Estructura
 
 - `src/features/patient/` — Diario, check-in, AlivIA, Comunidad
 - `src/features/auth/` — login RUT + demo
 - `src/shared/mocks/` — datos demo editables
+- `src/shared/data/trigger-catalog.ts` — catálogo versionado de gatillantes/alivios (no es generado; `src/shared/core/` sí lo es)
 - `src/features/*/api/` — sustituir por `fetch` real más adelante
 
 Referencia web (solo lectura): `../AlivIACare/src/screens/paciente/`.

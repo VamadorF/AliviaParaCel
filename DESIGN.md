@@ -44,6 +44,12 @@ Contraste texto normal ≥ 4.5:1; UI ≥ 3:1.
 - Errores: “Falta: …” accionable
 - Crisis (131) visualmente distinto del CTA “Guardar registro”
 - Banner: “BETA · datos de demostración”
+- Gatillantes y alivios (DIF-01; la UI llega en DIF-03):
+  - Dos listas separadas: “¿Hiciste algo para aliviarte?” (alivio por acción: nada / algo / mucho) y “¿Qué crees que lo gatilló?”. Nunca una sola lista mezclada.
+  - Opciones del catálogo `src/shared/data/trigger-catalog.ts` como texto en chips de ≥ 48 dp, **sin emojis**; “Otro” abre un campo de texto con label visible.
+  - Pasos opcionales: “Omitir” siempre visible y nunca bloquea “Guardar registro”.
+  - Copy descriptivo (“Dijiste que el calor te alivió mucho”), nunca recomendación ni causalidad.
+  - Nivel de alivio comunicado con texto, no solo con color.
 
 ## Figma
 

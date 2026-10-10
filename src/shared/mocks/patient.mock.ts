@@ -1,4 +1,5 @@
 import type { PatientBootstrap } from '@/features/patient/types';
+import { CATALOG_VERSION } from '@/shared/data/trigger-catalog';
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -70,6 +71,12 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
         { medId: 'm1', choice: 'indicated' },
         { medId: 'm2', choice: 'indicated' },
       ],
+      triggers: ['mala-noche'],
+      reliefActions: [
+        { action: 'calor-frio', relief: 'mucho' },
+        { action: 'ejercicio-suave', relief: 'algo' },
+      ],
+      catalogVersion: CATALOG_VERSION,
     },
     {
       id: 'c2',
@@ -82,6 +89,8 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
       emergency: false,
       registrant: 'self',
       doses: [{ medId: 'm1', choice: 'indicated' }],
+      // Registro antiguo: solo `why`. Se conserva así a propósito (DIF-01, compatibilidad).
+      why: ['😰 Estrés', 'Calor o frío local'],
     },
   ],
   appointment: {
