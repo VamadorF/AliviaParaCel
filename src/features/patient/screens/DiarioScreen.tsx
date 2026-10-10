@@ -152,6 +152,14 @@ export function DiarioScreen() {
                     pendiente de envío
                   </Text>
                 ) : null}
+                {r.quick ? (
+                  <Text
+                    style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
+                    testID={`checkin-quick-${r.id}`}
+                  >
+                    Registro rápido
+                  </Text>
+                ) : null}
               </View>
             </View>
           ))}
@@ -170,6 +178,14 @@ export function DiarioScreen() {
         onPress={() => navigation.navigate('Checkin')}
         accessibilityHint="Abre el check-in diario por pasos"
         testID="diario-checkin-cta"
+      />
+      <View style={{ height: 10 }} />
+      <Button
+        label="Registro rápido"
+        variant="ghost"
+        onPress={() => navigation.navigate('QuickCheckin')}
+        accessibilityHint="Abre el check-in de un día difícil"
+        testID="diario-quick-checkin"
       />
 
       <Card style={styles.block}>

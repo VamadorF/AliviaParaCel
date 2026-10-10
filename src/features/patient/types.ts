@@ -75,6 +75,8 @@ export type CheckInRecord = {
   clientRequestId?: string;
   /** MOB-16 · Ausente = ya está en el repositorio. `pending` solo vive en la cola visible. */
   syncStatus?: 'pending';
+  /** MOB-17 · Check-in rápido. Ausente = registro por pasos. */
+  quick?: boolean;
 };
 
 export type Appointment = {

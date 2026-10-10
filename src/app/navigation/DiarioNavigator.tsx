@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CheckinScreen } from '@/features/patient/screens/CheckinScreen';
 import { DiarioScreen } from '@/features/patient/screens/DiarioScreen';
+import { QuickCheckinScreen } from '@/features/patient/screens/QuickCheckinScreen';
 import type { DiarioStackParamList } from '@/shared/types/navigation';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
@@ -26,6 +27,11 @@ export function DiarioNavigator() {
         name="Checkin"
         component={CheckinScreen}
         options={{ title: 'Check-in diario' }}
+      />
+      <Stack.Screen
+        name="QuickCheckin"
+        component={QuickCheckinScreen}
+        options={{ title: 'Registro rápido' }}
       />
     </Stack.Navigator>
   );

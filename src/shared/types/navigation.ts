@@ -5,6 +5,7 @@ export type AuthStackParamList = {
 export type DiarioStackParamList = {
   DiarioHome: undefined;
   Checkin: undefined;
+  QuickCheckin: undefined;
 };
 
 export type MainTabParamList = {
