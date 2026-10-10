@@ -34,6 +34,14 @@ export function setPatientConsent(
   return patientRepository.setConsent(userId, profile, action, at);
 }
 
+export function acknowledgePatientInstruction(
+  userId: string,
+  profile: PatientProfileKind,
+  at: string,
+): Promise<PatientBootstrap> {
+  return patientRepository.acknowledgeInstruction(userId, profile, at);
+}
+
 export function resetPatientDemoData(
   userId: string,
   profile: PatientProfileKind,

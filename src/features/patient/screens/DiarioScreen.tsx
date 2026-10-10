@@ -17,6 +17,10 @@ import { EMERGENCY_TEL, centerPhoneOf, telHref } from '@/features/patient/utils/
 import { painColor, painLabel } from '@/features/patient/utils/pain';
 import { moodLabel } from '@/shared/data/mood-options';
 import { useTheme } from '@/shared/theme/ThemeContext';
+import {
+  formatInstructionRead,
+  instructionReadAt,
+} from '@/features/patient/utils/instruction-ack';
 
 function openDialer(number: string) {
   Linking.openURL(telHref(number)).catch(() => {});
@@ -34,7 +38,7 @@ function todayLabel() {
 export function DiarioScreen() {
   const { palette, mode } = useTheme();
   const { user } = useAuth();
-  const { data } = usePatientSession();
+  const { data, acknowledgeInstruction, isAcknowledgingInstruction } = usePatientSession();
   const navigation =
     useNavigation<NativeStackNavigationProp<DiarioStackParamList>>();
 
@@ -56,6 +60,7 @@ export function DiarioScreen() {
   }, [data.checkIns, today]);
 
   const centerPhone = centerPhoneOf(data.clinic);
+  const instructionRead = instructionReadAt(data);
   const series = useMemo(() => dailyPainSeries(data.checkIns), [data.checkIns]);
   const recent = series.slice(-7);
   const painAvg7 = recent.length
@@ -110,10 +115,30 @@ export function DiarioScreen() {
         </Card>
       ) : null}
 
-      {data.instruction ? (
-        <Card style={[styles.block, { backgroundColor: palette.accentSoft, borderColor: '#dde5f6' }]}>
+      {data.instruction && data.instruction.text.trim() ? (
+        <Card
+          testID="instruction-card"
+          style={[styles.block, { backgroundColor: palette.accentSoft, borderColor: '#dde5f6' }]}
+        >
           <Text style={[styles.kicker, { color: palette.accent }]}>INSTRUCCIÓN DE TU EQUIPO</Text>
           <Text style={[styles.cardTitle, { color: palette.text }]}>{data.instruction.text}</Text>
+          {instructionRead ? (
+            <Text
+              testID="instruction-read"
+              style={{ color: palette.primary, fontWeight: '800', fontSize: 13, marginTop: 10 }}
+            >
+              {formatInstructionRead(instructionRead)}
+            </Text>
+          ) : (
+            <View style={{ marginTop: 12 }}>
+              <Button
+                label="Entendido"
+                onPress={acknowledgeInstruction}
+                disabled={isAcknowledgingInstruction}
+                testID="instruction-ack"
+              />
+            </View>
+          )}
         </Card>
       ) : null}
 

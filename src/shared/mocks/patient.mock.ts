@@ -12,7 +12,10 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     posts: [...base.posts],
     medications: [...base.medications],
     appointment: base.appointment ? { ...base.appointment } : null,
-    instruction: base.instruction ? { ...base.instruction } : null,
+    instruction: base.instruction
+      ? { ...base.instruction, id: base.instruction.id > 0 ? base.instruction.id : 1 }
+      : null,
+    instructionAcks: base.instructionAcks?.map((ack) => ({ ...ack })),
     consent: base.consent ? { ...base.consent } : undefined,
     consentHistory: base.consentHistory ? [...base.consentHistory] : undefined,
     clinic: base.clinic ? { ...base.clinic } : base.clinic,
@@ -104,6 +107,7 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
     status: 'Pendiente',
   },
   instruction: {
+    id: 1,
     text: 'Registra el dolor antes de tomar rescate. Si supera 7 por dos días, escríbenos por AlivIA.',
     date: new Date(Date.now() - 2 * 86400000).toISOString(),
   },

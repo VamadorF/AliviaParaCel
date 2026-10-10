@@ -14,6 +14,7 @@ import { canWriteUserCache } from '@/features/auth/session/session';
 import { patientRepository } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import {
+  useAcknowledgeInstructionMutation,
   usePatientBootstrapQuery,
   useSetConsentMutation,
 } from '@/features/patient/hooks/usePatientBootstrap';
@@ -43,6 +44,9 @@ type PatientSessionValue = {
   /** Acepta (`true`) o revoca (`false`) el consentimiento; persiste con fecha real y versión. */
   setConsent: (granted: boolean) => void;
   isSavingConsent: boolean;
+  /** PAC-08 · Acusa la instrucción vigente con la fecha real. Si ya estaba acusada, no duplica. */
+  acknowledgeInstruction: () => void;
+  isAcknowledgingInstruction: boolean;
   lastSavedMessage: string | null;
   clearSavedMessage: () => void;
 };
@@ -71,6 +75,7 @@ export function PatientSessionProvider({
   const { online, ready } = useIsOnline();
   const bootstrapQuery = usePatientBootstrapQuery(online, ready);
   const consentMutation = useSetConsentMutation();
+  const ackMutation = useAcknowledgeInstructionMutation();
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
   const [outbox, setOutbox] = useState<{ userId: string; items: OutboxItem[] }>({
     userId: '',
@@ -183,6 +188,10 @@ export function PatientSessionProvider({
     [consentMutation],
   );
 
+  const acknowledgeInstruction = useCallback(() => {
+    ackMutation.mutate();
+  }, [ackMutation]);
+
   const clearSavedMessage = useCallback(() => setLastSavedMessage(null), []);
 
   const value = useMemo(
@@ -195,6 +204,8 @@ export function PatientSessionProvider({
       consentHistory,
       setConsent,
       isSavingConsent: consentMutation.isPending,
+      acknowledgeInstruction,
+      isAcknowledgingInstruction: ackMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     }),
@@ -207,6 +218,8 @@ export function PatientSessionProvider({
       consentHistory,
       setConsent,
       consentMutation.isPending,
+      acknowledgeInstruction,
+      ackMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     ],

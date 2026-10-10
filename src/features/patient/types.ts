@@ -88,8 +88,16 @@ export type Appointment = {
 };
 
 export type TeamInstruction = {
+  /** Id de la instrucción vigente. En la web es el id de la alerta. */
+  id: number;
   text: string;
   date: string;
+};
+
+/** PAC-08 · Acuse de lectura. El celular no tiene ficha de médico: queda en el mock del paciente. */
+export type InstructionAck = {
+  alertId: number;
+  readAt: string;
 };
 
 export type Message = {
@@ -141,6 +149,8 @@ export type PatientBootstrap = {
   checkIns: CheckInRecord[];
   appointment: Appointment | null;
   instruction: TeamInstruction | null;
+  /** PAC-08 · Acuses ya registrados. Ausente = ninguna instrucción leída. */
+  instructionAcks?: InstructionAck[];
   messages: Message[];
   posts: ForumPost[];
   messagingEnabled: boolean;

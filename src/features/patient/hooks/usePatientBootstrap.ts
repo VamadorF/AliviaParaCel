@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useAuth } from '@/app/providers/AuthProvider';
 import { canWriteUserCache } from '@/features/auth/session/session';
 import {
+  acknowledgePatientInstruction,
   fetchPatientBootstrap,
   patientRepository,
   resetPatientDemoData,
@@ -45,6 +46,19 @@ export function useSetConsentMutation() {
   return useMutation({
     mutationFn: (action: ConsentAction) =>
       setPatientConsent(user!.id, user!.profile, action, new Date().toISOString()),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useAcknowledgeInstructionMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      acknowledgePatientInstruction(user!.id, user!.profile, new Date().toISOString()),
     onSuccess: (data) => {
       cacheBootstrap(queryClient, user?.id, data);
     },

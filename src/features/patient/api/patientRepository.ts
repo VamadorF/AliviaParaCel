@@ -22,6 +22,12 @@ export type PatientRepository = {
     action: ConsentAction,
     at: string,
   ) => Promise<PatientBootstrap>;
+  /** PAC-08: acusa la instrucción vigente; `at` es la fecha real (ISO 8601). Idempotente. */
+  acknowledgeInstruction: (
+    userId: string,
+    profile: PatientProfileKind,
+    at: string,
+  ) => Promise<PatientBootstrap>;
   resetDemoData: (
     userId: string,
     profile: PatientProfileKind,

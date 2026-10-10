@@ -9,6 +9,7 @@ import type { StoragePort } from '@/shared/storage/storagePort';
 import type { PatientBootstrap } from '@/features/patient/types';
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
 import { applyConsent, stampSharing } from '@/features/patient/utils/consent';
+import { acknowledgeInstruction } from '@/features/patient/utils/instruction-ack';
 
 const STORAGE_PREFIX = '@alivia/patient-bootstrap/v1/';
 
@@ -81,6 +82,15 @@ export function createMockPatientRepository({
       await wait();
       const current = await readOrSeed(userId, profile);
       const next = applyConsent(current, action, at);
+      await storage.setItem(storageKey(userId), JSON.stringify(next));
+      return cloneBootstrap(next);
+    },
+
+    async acknowledgeInstruction(userId, profile, at) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      const next = acknowledgeInstruction(current, at);
+      if (next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return cloneBootstrap(next);
     },
