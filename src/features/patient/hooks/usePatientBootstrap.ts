@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useAuth } from '@/app/providers/AuthProvider';
 import { canWriteUserCache } from '@/features/auth/session/session';
 import {
-  appendPatientCheckIn,
   fetchPatientBootstrap,
+  patientRepository,
   resetPatientDemoData,
   setPatientConsent,
 } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
-import type { CheckInRecord, ConsentAction, PatientBootstrap } from '@/features/patient/types';
+import { flushOutbox } from '@/features/patient/sync/outbox';
+import type { ConsentAction, PatientBootstrap } from '@/features/patient/types';
+import { asyncStoragePort } from '@/shared/storage/asyncStorageAdapter';
 
 function cacheBootstrap(
   queryClient: QueryClient,
@@ -19,26 +21,20 @@ function cacheBootstrap(
   queryClient.setQueryData(patientQueryKeys.bootstrap(userId), data);
 }
 
-export function usePatientBootstrapQuery() {
+export function usePatientBootstrapQuery(online: boolean, ready: boolean) {
   const { user } = useAuth();
 
   return useQuery({
     queryKey: patientQueryKeys.bootstrap(user?.id ?? ''),
-    queryFn: () => fetchPatientBootstrap(user!.id, user!.profile),
-    enabled: Boolean(user),
-  });
-}
-
-export function useAppendCheckInMutation() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (record: CheckInRecord) =>
-      appendPatientCheckIn(user!.id, user!.profile, record),
-    onSuccess: (data) => {
-      cacheBootstrap(queryClient, user?.id, data);
+    // El mock vive en el teléfono: se lee aunque el navegador reporte sin red.
+    networkMode: 'always',
+    queryFn: async () => {
+      if (online && user) {
+        await flushOutbox(asyncStoragePort, patientRepository, true, user.id);
+      }
+      return fetchPatientBootstrap(user!.id, user!.profile);
     },
+    enabled: Boolean(user) && ready,
   });
 }
 

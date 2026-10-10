@@ -1,8 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useRef, useState } from 'react';
 import { FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { canWriteUserCache } from '@/features/auth/session/session';
 import {
   EMERGENCY_NOTICE,
   NO_MEDICAL_ADVICE_NOTICE,
@@ -12,10 +10,7 @@ import {
   getAssistantMode,
   saveAiSummaryNote,
 } from '@/features/patient/assistant/assistant';
-import { patientRepository } from '@/features/patient/api/patientApi';
-import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
-import { newTeamMessageId, persistTeamMessage } from '@/features/patient/messaging/teamMessage';
 import type { Message } from '@/features/patient/types';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Screen } from '@/shared/components/Screen';
@@ -45,8 +40,7 @@ function placeBaseMessage(message: Message): Channel | 'patient' {
 export function AliviaScreen() {
   const { palette } = useTheme();
   const { user } = useAuth();
-  const { data } = usePatientSession();
-  const queryClient = useQueryClient();
+  const { data, sendTeamMessage } = usePatientSession();
   const [channel, setChannel] = useState<Channel>('assistant');
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -62,7 +56,7 @@ export function AliviaScreen() {
   const teamAvailable = data.doctorLinked && data.messagingEnabled;
   const doctorName = data.appointment?.doctorName ?? null;
 
-  // El asistente sigue en esta sesión (MOB-09). El equipo se lee del bootstrap persistido (MOB-10).
+  // El asistente sigue en esta sesión (MOB-09). El equipo persiste (MOB-10); sin red queda en la cola (MOB-16).
   const messages = useMemo(() => {
     const byChannel: Record<Channel, Message[]> = { assistant: [], team: [] };
     const unscopedPatient: Message[] = [];
@@ -104,19 +98,11 @@ export function AliviaScreen() {
       setDraft('');
       return;
     }
-    if (!user) return;
     sendingRef.current = true;
     setSending(true);
-    void persistTeamMessage(patientRepository, user.id, user.profile, {
-      id: newTeamMessageId(),
-      body,
-      at: at.toISOString(),
-    })
-      .then((result) => {
-        if (!result.ok) return;
-        if (canWriteUserCache(user.id)) {
-          queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), result.data);
-        }
+    void sendTeamMessage(body, at.toISOString())
+      .then((status) => {
+        if (status === 'empty') return;
         setDraft('');
       })
       .finally(() => {
@@ -304,6 +290,14 @@ export function AliviaScreen() {
                     <Text style={{ color: palette.text, lineHeight: 21 }}>
                       {simulated ? simulated.text : item.body}
                     </Text>
+                    {item.syncStatus === 'pending' ? (
+                      <Text
+                        style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 6 }}
+                        testID={`message-pending-${item.id}`}
+                      >
+                        pendiente de envío
+                      </Text>
+                    ) : null}
                     {simulated?.unavailable ? (
                       <Pressable
                         accessibilityRole="link"

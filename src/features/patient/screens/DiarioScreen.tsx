@@ -144,6 +144,14 @@ export function DiarioScreen() {
                     No compartido con tu equipo
                   </Text>
                 ) : null}
+                {r.syncStatus === 'pending' ? (
+                  <Text
+                    style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
+                    testID={`checkin-pending-${r.id}`}
+                  >
+                    pendiente de envío
+                  </Text>
+                ) : null}
               </View>
             </View>
           ))}

@@ -71,6 +71,10 @@ export type CheckInRecord = {
    * comparte con el equipo. Ausente = compartido (registros anteriores a MOB-06).
    */
   sharedWithTeam?: boolean;
+  /** MOB-16 · Idempotencia del envío. El mismo id no se vuelve a escribir. */
+  clientRequestId?: string;
+  /** MOB-16 · Ausente = ya está en el repositorio. `pending` solo vive en la cola visible. */
+  syncStatus?: 'pending';
 };
 
 export type Appointment = {
@@ -93,6 +97,8 @@ export type Message = {
   at: string;
   /** MOB-10 · Canal explícito. Ausente en mensajes anteriores: se infiere por `from`. */
   channel?: 'assistant' | 'team';
+  /** MOB-16 · Ausente = ya está en el repositorio. */
+  syncStatus?: 'pending';
 };
 
 export type ForumPost = {
