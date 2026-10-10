@@ -138,6 +138,20 @@ export type ForumPost = {
   at: string;
   /** MOB-11 · Ausente o null: tema. Si tiene id, es una respuesta a ese tema. */
   parentId?: string | null;
+  /** COM-01 · Ausente = visible. true = ocultada; en el móvil se marca en el fixture o con hideCommunityPost. */
+  hidden?: boolean;
+  /** COM-01 · Reportes recibidos. Ausente = ninguno. */
+  reportCount?: number;
+};
+
+/** COM-01 · Misma forma que ForumReportRow de la web. La cola de moderación no vive en el móvil. */
+export type ForumReport = {
+  id: string;
+  postId: string;
+  reporterRut: string;
+  reason: string;
+  status: 'abierto' | 'resuelto';
+  createdAt: string;
 };
 
 /** MOB-06 · Misma forma que ConsentState / ConsentEventRow de la web (PAC-02), sin RUT: el bootstrap ya es del paciente. */
@@ -173,6 +187,8 @@ export type PatientBootstrap = {
   instructionAcks?: InstructionAck[];
   messages: Message[];
   posts: ForumPost[];
+  /** COM-01 · Ausente = ningún reporte. */
+  forumReports?: ForumReport[];
   messagingEnabled: boolean;
   doctorLinked: boolean;
   /** MOB-19 · Ausente o sin teléfono: no se muestra el teléfono del centro. */

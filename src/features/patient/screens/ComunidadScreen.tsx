@@ -9,11 +9,18 @@ import {
   communityAuthor,
   newCommunityPostId,
   persistCommunityPost,
-  repliesOf,
-  threadsOf,
   type ForumRejectReason,
 } from '@/features/patient/community/forum';
+import {
+  authorSeesHidden,
+  persistCommunityReport,
+  shownReplies,
+  shownThreads,
+  visibleTo,
+  type ReportRejectReason,
+} from '@/features/patient/community/report';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
+import type { ForumPost } from '@/features/patient/types';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
@@ -25,6 +32,12 @@ const REJECT_COPY: Record<ForumRejectReason, string> = {
   empty: 'Escribe algo antes de publicar.',
   abusive: 'AlivIA moderó tu publicación: revisa las normas de convivencia.',
   'missing-topic': 'Ese tema ya no está disponible.',
+};
+
+const REPORT_COPY: Record<ReportRejectReason, string> = {
+  empty: 'Escribe el motivo del reporte.',
+  'missing-post': 'Esa publicación ya no está.',
+  'own-post': 'No puedes reportar tu propia publicación.',
 };
 
 function formatWhen(iso: string) {
@@ -46,17 +59,32 @@ export function ComunidadScreen() {
   const [topicDraft, setTopicDraft] = useState('');
   const [replyDraft, setReplyDraft] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [reportPostId, setReportPostId] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
 
-  const threads = useMemo(() => threadsOf(data.posts), [data.posts]);
-  const active = activeId
+  const viewer = user ? communityAuthor(user.name) : '';
+  const threads = useMemo(() => shownThreads(data.posts, viewer), [data.posts, viewer]);
+  const opened = activeId
     ? data.posts.find((post) => post.id === activeId && !post.parentId)
     : undefined;
+  const active = opened && visibleTo(opened, viewer) ? opened : undefined;
   const replies = useMemo(
-    () => (active ? repliesOf(data.posts, active.id) : []),
-    [data.posts, active],
+    () => (active ? shownReplies(data.posts, active.id, viewer) : []),
+    [data.posts, active, viewer],
   );
+
+  function closeReport() {
+    setReportPostId(null);
+    setReason('');
+  }
+
+  function openThread(postId: string) {
+    setActiveId(postId);
+    setFeedback(null);
+    closeReport();
+  }
 
   async function publish(text: string, parentId: string | null) {
     if (!user || saving) return;
@@ -88,6 +116,57 @@ export function ComunidadScreen() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function sendReport(postId: string) {
+    if (!user || saving) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const result = await persistCommunityReport(patientRepository, user.id, user.profile, {
+        id: newCommunityPostId(),
+        postId,
+        reporterRut: user.rut,
+        reporterAuthor: viewer,
+        reason,
+        at: new Date().toISOString(),
+      });
+      if (!result.ok) {
+        setFeedback({ tone: 'danger', text: REPORT_COPY[result.reason] });
+        return;
+      }
+      if (canWriteUserCache(user.id)) {
+        queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), result.data);
+      }
+      closeReport();
+      setFeedback({ tone: 'ok', text: 'Reporte enviado.' });
+    } catch {
+      setFeedback({ tone: 'danger', text: 'No se pudo guardar el reporte. Intenta de nuevo.' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function moderation(post: ForumPost) {
+    return (
+      <PostModeration
+        post={post}
+        viewer={viewer}
+        open={reportPostId === post.id}
+        reason={reason}
+        saving={saving}
+        onOpen={() => {
+          setReportPostId(post.id);
+          setReason('');
+          setFeedback(null);
+        }}
+        onChangeReason={setReason}
+        onSubmit={() => {
+          void sendReport(post.id);
+        }}
+        onCancel={closeReport}
+      />
+    );
   }
 
   return (
@@ -129,6 +208,7 @@ export function ComunidadScreen() {
             onPress={() => {
               setActiveId(null);
               setFeedback(null);
+              closeReport();
             }}
             style={styles.back}
           >
@@ -141,6 +221,7 @@ export function ComunidadScreen() {
             <Text style={{ color: palette.textMuted, fontSize: 12, marginTop: 8 }}>
               {active.author} · {formatWhen(active.at)}
             </Text>
+            {moderation(active)}
           </Card>
           {replies.length === 0 ? (
             <Text style={{ color: palette.textMuted, marginBottom: 12, lineHeight: 20 }}>
@@ -154,6 +235,7 @@ export function ComunidadScreen() {
                 <Text style={{ color: palette.textMuted, fontSize: 12, marginTop: 8 }}>
                   {formatWhen(reply.at)}
                 </Text>
+                {moderation(reply)}
               </Card>
             ))
           )}
@@ -183,18 +265,14 @@ export function ComunidadScreen() {
             }}
           />
           {threads.map((post) => {
-            const replyCount = data.posts.filter((item) => item.parentId === post.id).length;
+            const replyCount = shownReplies(data.posts, post.id, viewer).length;
             return (
-              <Pressable
-                key={post.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${post.excerpt}. ${replyCount} respuestas.`}
-                onPress={() => {
-                  setActiveId(post.id);
-                  setFeedback(null);
-                }}
-              >
-                <Card>
+              <Card key={post.id}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${post.excerpt}. ${replyCount} respuestas.`}
+                  onPress={() => openThread(post.id)}
+                >
                   <Text style={{ fontWeight: '800', color: palette.text }}>{post.author}</Text>
                   <Text
                     numberOfLines={4}
@@ -206,8 +284,9 @@ export function ComunidadScreen() {
                     {formatWhen(post.at)} · {replyCount}{' '}
                     {replyCount === 1 ? 'respuesta' : 'respuestas'}
                   </Text>
-                </Card>
-              </Pressable>
+                </Pressable>
+                {moderation(post)}
+              </Card>
             );
           })}
           {threads.length === 0 ? (
@@ -219,6 +298,93 @@ export function ComunidadScreen() {
         </View>
       )}
     </Screen>
+  );
+}
+
+function PostModeration({
+  post,
+  viewer,
+  open,
+  reason,
+  saving,
+  onOpen,
+  onChangeReason,
+  onSubmit,
+  onCancel,
+}: {
+  post: ForumPost;
+  viewer: string;
+  open: boolean;
+  reason: string;
+  saving: boolean;
+  onOpen: () => void;
+  onChangeReason: (text: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}) {
+  const { palette } = useTheme();
+  if (!visibleTo(post, viewer)) return null;
+  const mineHidden = authorSeesHidden(post, viewer);
+  const canReport = viewer.length > 0 && post.author !== viewer;
+  if (!mineHidden && !canReport) return null;
+
+  return (
+    <View>
+      {mineHidden ? (
+        <View
+          testID="post-hidden-notice"
+          style={[styles.notice, { borderColor: palette.warning }]}
+        >
+          <Text style={{ color: palette.text, fontWeight: '700', lineHeight: 20 }}>
+            Tu publicación fue ocultada.
+          </Text>
+        </View>
+      ) : null}
+      {canReport && !open ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Reportar publicación de ${post.author}`}
+          onPress={onOpen}
+          disabled={saving}
+          style={styles.reportBtn}
+          testID="report-post"
+        >
+          <Text style={{ color: palette.primary, fontWeight: '700' }}>Reportar</Text>
+        </Pressable>
+      ) : null}
+      {canReport && open ? (
+        <View style={styles.reportForm}>
+          <Text style={{ color: palette.text, fontWeight: '700' }}>Motivo</Text>
+          <TextInput
+            value={reason}
+            onChangeText={onChangeReason}
+            placeholder="Describe qué ocurrió"
+            placeholderTextColor={palette.textMuted}
+            accessibilityLabel="Motivo"
+            editable={!saving}
+            multiline
+            style={[
+              styles.input,
+              {
+                color: palette.text,
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
+              },
+            ]}
+          />
+          <Button label="Enviar reporte" onPress={onSubmit} loading={saving} disabled={saving} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar reporte"
+            onPress={onCancel}
+            disabled={saving}
+            style={styles.reportBtn}
+          >
+            <Text style={{ color: palette.textMuted, fontWeight: '700' }}>Cancelar</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -285,4 +451,17 @@ const styles = StyleSheet.create({
   },
   back: { minHeight: 44, justifyContent: 'center', marginBottom: 8 },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 24 },
+  notice: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  reportBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  reportForm: { gap: 10, marginTop: 8 },
 });

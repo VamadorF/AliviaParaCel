@@ -15,7 +15,10 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     ...base,
     checkIns: [...base.checkIns],
     messages: [...base.messages],
-    posts: [...base.posts],
+    posts: base.posts.map((post) => ({ ...post })),
+    ...(base.forumReports
+      ? { forumReports: base.forumReports.map((report) => ({ ...report })) }
+      : {}),
     medications: [...base.medications],
     appointment: copyAppointment(base.appointment),
     instruction: base.instruction
@@ -132,6 +135,14 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
     },
   ],
   posts: [
+    {
+      id: 'p3',
+      author: 'Constanza E.',
+      excerpt: 'Caminé diez minutos después del almuerzo y el dolor bajó un poco.',
+      at: new Date(Date.now() - 86400000).toISOString(),
+      // Sin panel de admin: el fixture deja esta publicación ocultada para que Constanza la vea.
+      hidden: true,
+    },
     {
       id: 'p1',
       author: 'Ana R.',
