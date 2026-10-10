@@ -1,5 +1,6 @@
 export type AuthStackParamList = {
   Login: undefined;
+  PoliticaPrivacidad: undefined;
 };
 
 export type DiarioStackParamList = {
@@ -18,6 +19,7 @@ export type MainTabParamList = {
 export type PerfilStackParamList = {
   PerfilHome: undefined;
   Recordatorios: undefined;
+  PoliticaPrivacidad: undefined;
 };
 
 export type RootStackParamList = {

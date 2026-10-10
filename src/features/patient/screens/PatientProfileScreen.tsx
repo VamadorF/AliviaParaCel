@@ -58,6 +58,13 @@ export function PatientProfileScreen() {
         </View>
       </Card>
       <ConsentCard />
+      <Button
+        label="Ver política de privacidad"
+        variant="ghost"
+        onPress={() => navigation.navigate('PoliticaPrivacidad')}
+        testID="privacy-open"
+      />
+      <View style={{ height: 12 }} />
       <Card>
         <Text style={{ fontWeight: '800', color: palette.text }}>Recordatorios</Text>
         <Text style={{ color: palette.textMuted, marginTop: 6, lineHeight: 21, marginBottom: 12 }}>

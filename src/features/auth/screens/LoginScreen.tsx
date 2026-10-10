@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -14,10 +16,12 @@ import {
   DEMO_PASSWORD,
   DEMO_RUT,
 } from '@/shared/mocks/users.mock';
+import type { AuthStackParamList } from '@/shared/types/navigation';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 export function LoginScreen() {
   const { palette, mode } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { signInWithRut, signInAsDemo, isLoading } = useAuth();
   const [rut, setRut] = useState(formatRut(DEMO_RUT));
   const [password, setPassword] = useState('');
@@ -76,6 +80,13 @@ export function LoginScreen() {
           testID="login-demo"
         />
       </View>
+
+      <Button
+        label="Ver política de privacidad"
+        variant="ghost"
+        onPress={() => navigation.navigate('PoliticaPrivacidad')}
+        testID="privacy-open"
+      />
 
       <Text style={[styles.hint, { color: palette.textMuted }]}>
         Demo: {formatRut(DEMO_RUT)} · clave {DEMO_PASSWORD}
