@@ -115,11 +115,21 @@ function extractBraceFunction(source, name) {
   return sliceBalancedBraces(source.slice(fnStart), open - fnStart).trimEnd();
 }
 
+function extractInterface(source, name) {
+  const start = source.indexOf(`export interface ${name} `);
+  if (start < 0) throw new Error(`${name} no encontrado`);
+  const head = source.slice(start);
+  const open = head.indexOf('{');
+  return sliceBalancedBraces(head, open).trimEnd();
+}
+
 function buildCheckinRow() {
   const bootstrap = readWeb('lib/bootstrap.ts');
-  const m = bootstrap.match(/export interface CheckInRow \{[\s\S]*?\n\}/);
-  if (!m) throw new Error('CheckInRow no encontrado en bootstrap.ts');
-  return withHeader(m[0]);
+  const blocks = ['CheckInNotes', 'GiDetail', 'MedDetailEntry', 'CheckInRow'].map((name) =>
+    extractInterface(bootstrap, name),
+  );
+  const body = `import type { CheckInDose } from './checkin-dose';\n\n${blocks.join('\n\n')}\n`;
+  return withHeader(body);
 }
 
 function buildRut() {

@@ -6,5 +6,9 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ["dist/*"],
-  }
+  },
+  {
+    files: ["src/shared/storage/asyncStorageAdapter.ts"],
+    rules: { "import/no-unresolved": "off" },
+  },
 ]);

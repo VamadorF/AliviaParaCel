@@ -44,6 +44,24 @@ describe('mockPatientRepository', () => {
     expect(reloaded.checkIns[0].id).toBe('x');
   });
 
+  it('saveBootstrap persiste entre cargas', async () => {
+    const patient = repo();
+    const base = await patient.loadBootstrap(demoUser.id, 'demo');
+    const edited = { ...base, messages: [{ id: 'm-new', from: 'team' as const, body: 'Hola', at: '2026-01-01T10:00:00Z' }] };
+    await patient.saveBootstrap(demoUser.id, edited);
+    const reloaded = await patient.loadBootstrap(demoUser.id, 'demo');
+    expect(reloaded.messages).toHaveLength(1);
+    expect(reloaded.messages[0].id).toBe('m-new');
+  });
+
+  it('JSON inválido en storage re-siembra desde fixture', async () => {
+    const storage = createMemoryStorage();
+    await storage.setItem(`@alivia/patient-bootstrap/v1/${demoUser.id}`, '{no-json');
+    const patient = createMockPatientRepository({ storage, delayMs: 0 });
+    const data = await patient.loadBootstrap(demoUser.id, 'demo');
+    expect(data.checkIns.some((c) => c.id === 'c1')).toBe(true);
+  });
+
   it('reset demo vuelve al fixture', async () => {
     const patient = repo();
     await patient.appendCheckIn(demoUser.id, 'demo', {
