@@ -19,11 +19,23 @@ const DERIVED_SYMBOLS = [
 ];
 
 function webSrcRoot() {
-  for (const rel of ['../../_wt/OLA-0-WEB/src', '../AlivIACare/src', '../../AlivIACare/src']) {
+  const fromEnv = process.env.ALIVIA_WEB_SRC;
+  if (fromEnv) {
+    const dir = path.resolve(fromEnv);
+    if (fs.existsSync(path.join(dir, 'data', 'rut.ts'))) return dir;
+  }
+  for (const rel of [
+    'AlivIACare/src', // CI: checkout del repo web en subcarpeta
+    '../../_wt/OLA-0-WEB/src',
+    '../AlivIACare/src',
+    '../../AlivIACare/src',
+  ]) {
     const dir = path.resolve(ROOT, rel);
     if (fs.existsSync(path.join(dir, 'data', 'rut.ts'))) return dir;
   }
-  throw new Error('No se encontró AlivIACare/src (esperado junto al repo móvil).');
+  throw new Error(
+    'No se encontró AlivIACare/src. En CI debe existir AlivIACare/ (checkout) o definir ALIVIA_WEB_SRC.',
+  );
 }
 
 function readWeb(rel) {
