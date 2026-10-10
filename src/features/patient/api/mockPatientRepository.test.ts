@@ -13,7 +13,7 @@ function repo() {
   });
 }
 
-describe('mockPatientRepository', () => {
+describe('CAL-01 · mockPatientRepository (persistencia)', () => {
   it('usuario limpio sin check-ins al sembrar', async () => {
     const data = await repo().loadBootstrap(cleanUser.id, 'clean');
     expect(data.checkIns).toHaveLength(0);
