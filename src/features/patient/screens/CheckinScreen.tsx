@@ -38,6 +38,7 @@ import {
   showReliefTriggerSteps,
   triggerOptions,
 } from '@/features/patient/utils/checkin-steps';
+import { moodChoices } from '@/shared/data/mood-options';
 import { OTHER_ID, RELIEF_LEVELS, RELIEF_LEVEL_LABEL, reliefLabel } from '@/shared/data/trigger-catalog';
 import type { Appetite, CheckinDraft } from '@/features/patient/utils/checkin';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
@@ -45,7 +46,6 @@ import { painColor, painLabel } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 const ZONES = ['Cabeza', 'Cuello', 'Hombro', 'Lumbar', 'Cadera', 'Rodilla', 'Otro'];
-const MOODS = ['Bien', 'Regular', 'Cansada', 'Ansiosa'];
 const SLEEP = ['< 5 h', '5–6 h', '6–7 h', '7+ h'];
 const APPETITES: Appetite[] = ['normal', 'reducido', 'nulo'];
 
@@ -291,7 +291,7 @@ export function CheckinScreen() {
         <View>
           <Text style={styles.label}>Ánimo</Text>
           <View style={styles.rowWrap}>
-            {MOODS.map((m) => (
+            {moodChoices(draft.mood).map((m) => (
               <Chip
                 key={m}
                 label={m}

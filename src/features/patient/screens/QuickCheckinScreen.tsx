@@ -19,6 +19,7 @@ import {
   sameAsLast,
 } from '@/features/patient/utils/checkin-quick';
 import type { DiarioStackParamList } from '@/shared/types/navigation';
+import { moodLabel } from '@/shared/data/mood-options';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 function painText(value: number): string {
@@ -156,7 +157,7 @@ export function QuickCheckinScreen() {
           accessibilityLiveRegion="polite"
           testID="quick-copied"
         >
-          Zonas: {draft.zones.join(', ') || 'sin zonas'}. Ánimo: {draft.mood || 'sin ánimo'}. Sueño:{' '}
+          Zonas: {draft.zones.join(', ') || 'sin zonas'}. Ánimo: {moodLabel(draft.mood) || 'sin ánimo'}. Sueño:{' '}
           {draft.sleep || 'sin sueño'}.
         </Text>
       ) : null}

@@ -15,6 +15,7 @@ import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
 import { isSharedWithTeam } from '@/features/patient/utils/consent';
 import { EMERGENCY_TEL, centerPhoneOf, telHref } from '@/features/patient/utils/crisis';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
+import { moodLabel } from '@/shared/data/mood-options';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 function openDialer(number: string) {
@@ -119,50 +120,53 @@ export function DiarioScreen() {
       {todayRecords.length > 0 ? (
         <Card style={styles.block}>
           <Text style={[styles.cardTitle, { color: palette.text }]}>Registros de hoy</Text>
-          {todayRecords.map((r) => (
-            <View key={r.id} style={[styles.row, { backgroundColor: '#f7f9f6' }]}>
-              <View
-                style={[styles.painDot, { backgroundColor: painColor(r.pain) }]}
-                accessibilityLabel={`Dolor ${r.pain.toFixed(1)}, ${painLabel(r.pain)}`}
-              >
-                <Text style={styles.painNum}>{r.pain.toFixed(1)}</Text>
+          {todayRecords.map((r) => {
+            const mood = moodLabel(r.mood);
+            return (
+              <View key={r.id} style={[styles.row, { backgroundColor: '#f7f9f6' }]}>
+                <View
+                  style={[styles.painDot, { backgroundColor: painColor(r.pain) }]}
+                  accessibilityLabel={`Dolor ${r.pain.toFixed(1)}, ${painLabel(r.pain)}`}
+                >
+                  <Text style={styles.painNum}>{r.pain.toFixed(1)}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: '700', color: palette.text }}>
+                    {r.time} · {r.zones.join(' · ') || 'Sin zonas'}
+                  </Text>
+                  <Text style={{ color: palette.textMuted, fontSize: 13 }}>
+                    {[mood && `Ánimo: ${mood}`, r.sleep && `Sueño: ${r.sleep}`]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
+                  </Text>
+                  {!isSharedWithTeam(r) ? (
+                    <Text
+                      style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
+                      testID={`checkin-not-shared-${r.id}`}
+                    >
+                      No compartido con tu equipo
+                    </Text>
+                  ) : null}
+                  {r.syncStatus === 'pending' ? (
+                    <Text
+                      style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
+                      testID={`checkin-pending-${r.id}`}
+                    >
+                      pendiente de envío
+                    </Text>
+                  ) : null}
+                  {r.quick ? (
+                    <Text
+                      style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
+                      testID={`checkin-quick-${r.id}`}
+                    >
+                      Registro rápido
+                    </Text>
+                  ) : null}
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', color: palette.text }}>
-                  {r.time} · {r.zones.join(' · ') || 'Sin zonas'}
-                </Text>
-                <Text style={{ color: palette.textMuted, fontSize: 13 }}>
-                  {[r.mood && `Ánimo: ${r.mood}`, r.sleep && `Sueño: ${r.sleep}`]
-                    .filter(Boolean)
-                    .join(' · ') || '—'}
-                </Text>
-                {!isSharedWithTeam(r) ? (
-                  <Text
-                    style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
-                    testID={`checkin-not-shared-${r.id}`}
-                  >
-                    No compartido con tu equipo
-                  </Text>
-                ) : null}
-                {r.syncStatus === 'pending' ? (
-                  <Text
-                    style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
-                    testID={`checkin-pending-${r.id}`}
-                  >
-                    pendiente de envío
-                  </Text>
-                ) : null}
-                {r.quick ? (
-                  <Text
-                    style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
-                    testID={`checkin-quick-${r.id}`}
-                  >
-                    Registro rápido
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </Card>
       ) : (
         <View style={[styles.prompt, { backgroundColor: promptBg }]}>
