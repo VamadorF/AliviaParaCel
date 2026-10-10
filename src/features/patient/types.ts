@@ -122,6 +122,12 @@ export type ConsentEvent = {
   createdAt: string;
 };
 
+/** MOB-19 · Clínica del paciente en los fixtures. Sin teléfono, el centro no se muestra. */
+export type PatientClinic = {
+  name: string;
+  phone?: string | null;
+};
+
 export type PatientBootstrap = {
   medications: Medication[];
   checkIns: CheckInRecord[];
@@ -131,6 +137,8 @@ export type PatientBootstrap = {
   posts: ForumPost[];
   messagingEnabled: boolean;
   doctorLinked: boolean;
+  /** MOB-19 · Ausente o sin teléfono: no se muestra el teléfono del centro. */
+  clinic?: PatientClinic | null;
   /** MOB-06 · Opcional: sin registro se asume aceptado, sin fecha (nunca se inventa una). */
   consent?: ConsentState;
   /** MOB-06 · Historial append-only, del más reciente al más antiguo. */

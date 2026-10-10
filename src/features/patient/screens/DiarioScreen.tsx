@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
@@ -13,8 +13,13 @@ import type { DiarioStackParamList } from '@/shared/types/navigation';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
 import { isSharedWithTeam } from '@/features/patient/utils/consent';
+import { EMERGENCY_TEL, centerPhoneOf, telHref } from '@/features/patient/utils/crisis';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
+
+function openDialer(number: string) {
+  Linking.openURL(telHref(number)).catch(() => {});
+}
 
 function todayLabel() {
   const d = new Date().toLocaleDateString('es-CL', {
@@ -49,6 +54,7 @@ export function DiarioScreen() {
     return count;
   }, [data.checkIns, today]);
 
+  const centerPhone = centerPhoneOf(data.clinic);
   const series = useMemo(() => dailyPainSeries(data.checkIns), [data.checkIns]);
   const recent = series.slice(-7);
   const painAvg7 = recent.length
@@ -180,18 +186,52 @@ export function DiarioScreen() {
         <PainChart values={series} gridColor={palette.border} labelColor={palette.textMuted} />
       </Card>
 
-      <Pressable
-        style={[styles.crisis, { backgroundColor: crisisBg, borderColor: crisisBorder }]}
-        onPress={() => navigation.getParent()?.navigate('AlivIA' as never)}
-        accessibilityRole="button"
-        accessibilityLabel="Dolor muy fuerte o inusual. Ir a AlivIA"
-      >
-        <IconTile name="warn" color={palette.danger} background={warnBg} size={40} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: palette.text, fontWeight: '800' }}>¿Dolor muy fuerte o inusual?</Text>
-          <Text style={{ color: palette.textMuted, marginTop: 2 }}>Habla con AlivIA o tu equipo</Text>
-        </View>
-      </Pressable>
+      <View style={[styles.crisis, { backgroundColor: crisisBg, borderColor: crisisBorder }]}>
+        <Pressable
+          onPress={() => navigation.getParent()?.navigate('AlivIA' as never)}
+          accessibilityRole="button"
+          accessibilityLabel="Dolor muy fuerte o inusual. Ir a AlivIA"
+          style={({ pressed }) => [styles.crisisNav, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <IconTile name="warn" color={palette.danger} background={warnBg} size={40} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: palette.text, fontWeight: '800' }}>¿Dolor muy fuerte o inusual?</Text>
+            <Text style={{ color: palette.textMuted, marginTop: 2 }}>Habla con AlivIA o tu equipo</Text>
+          </View>
+        </Pressable>
+        <Pressable
+          testID="diario-call-131"
+          accessibilityRole="link"
+          accessibilityLabel="Llamar al 131"
+          accessibilityHint="Abre el marcador"
+          onPress={() => openDialer(EMERGENCY_TEL)}
+          style={({ pressed }) => [
+            styles.crisisCall,
+            { borderColor: palette.danger, opacity: pressed ? 0.75 : 1 },
+          ]}
+        >
+          <Text style={{ color: palette.danger, fontWeight: '800', fontSize: 16 }}>
+            Llamar al {EMERGENCY_TEL}
+          </Text>
+        </Pressable>
+        {centerPhone ? (
+          <Pressable
+            testID="diario-call-center"
+            accessibilityRole="link"
+            accessibilityLabel={`Llamar al centro, ${centerPhone}`}
+            accessibilityHint="Abre el marcador"
+            onPress={() => openDialer(centerPhone)}
+            style={({ pressed }) => [
+              styles.crisisCall,
+              { borderColor: palette.border, opacity: pressed ? 0.75 : 1 },
+            ]}
+          >
+            <Text style={{ color: palette.text, fontWeight: '700', fontSize: 15 }}>
+              Llamar al centro · {centerPhone}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
     </Screen>
   );
 }
@@ -240,8 +280,20 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
+  },
+  crisisNav: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 48,
+  },
+  crisisCall: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginTop: 8,
+    backgroundColor: 'transparent',
   },
 });

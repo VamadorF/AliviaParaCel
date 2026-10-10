@@ -15,6 +15,7 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     instruction: base.instruction ? { ...base.instruction } : null,
     consent: base.consent ? { ...base.consent } : undefined,
     consentHistory: base.consentHistory ? [...base.consentHistory] : undefined,
+    clinic: base.clinic ? { ...base.clinic } : base.clinic,
   };
 }
 
@@ -136,6 +137,11 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
   ],
   messagingEnabled: true,
   doctorLinked: true,
+  // Red de Constanza en los fixtures web: ALIVIAMVP (teléfono de esa clínica).
+  clinic: {
+    name: 'ALIVIAMVP',
+    phone: '+56 2 2555 0100',
+  },
 };
 
 export const CLEAN_BOOTSTRAP: PatientBootstrap = {
@@ -154,4 +160,5 @@ export const CLEAN_BOOTSTRAP: PatientBootstrap = {
   ],
   messagingEnabled: false,
   doctorLinked: false,
+  // Paciente nuevo sin clínica en la red: no hay teléfono de centro.
 };
