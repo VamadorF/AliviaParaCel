@@ -16,6 +16,7 @@ import { PreConsultBlock } from '@/features/patient/components/PreConsultBlock';
 import { isSharedWithTeam } from '@/features/patient/utils/consent';
 import { EMERGENCY_TEL, centerPhoneOf, telHref } from '@/features/patient/utils/crisis';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
+import { reliefHelpDetail, reliefHelpOf } from '@/features/patient/utils/relief-help';
 import { moodLabel } from '@/shared/data/mood-options';
 import { useTheme } from '@/shared/theme/ThemeContext';
 import {
@@ -69,6 +70,7 @@ export function DiarioScreen() {
   const centerPhone = centerPhoneOf(data.clinic);
   const instructionRead = instructionReadAt(data);
   const series = useMemo(() => dailyPainSeries(data.checkIns), [data.checkIns]);
+  const helped = useMemo(() => reliefHelpOf(data.checkIns), [data.checkIns]);
   const recent = series.slice(-7);
   const painAvg7 = recent.length
     ? (recent.reduce((sum, value) => sum + value, 0) / recent.length).toFixed(1)
@@ -252,6 +254,36 @@ export function DiarioScreen() {
         <PainChart values={series} gridColor={palette.border} labelColor={palette.textMuted} />
       </Card>
 
+      <Card testID="relief-help-card" style={styles.block}>
+        <Text style={[styles.cardTitle, { color: palette.text, marginTop: 0 }]}>
+          Lo que te ha ayudado
+        </Text>
+        <Text style={[styles.helpNote, { color: palette.text }]}>
+          Según lo que registraste. No es una recomendación ni indica una causa.
+        </Text>
+        {helped.length === 0 ? (
+          <Text testID="relief-help-empty" style={[styles.helpEmpty, { color: palette.text }]}>
+            Aún no registras acciones de alivio.
+          </Text>
+        ) : (
+          helped.map((item, index) => (
+            <View
+              key={item.id}
+              accessible
+              accessibilityLabel={`${item.copy}. ${reliefHelpDetail(item)}`}
+              testID={`relief-help-${item.id.replace(/[^a-zA-Z0-9]+/g, '-')}`}
+              style={[
+                styles.helpRow,
+                index > 0 ? { borderTopWidth: 1, borderTopColor: palette.border } : null,
+              ]}
+            >
+              <Text style={[styles.helpCopy, { color: palette.text }]}>{item.copy}</Text>
+              <Text style={[styles.helpMeta, { color: palette.textMuted }]}>{reliefHelpDetail(item)}</Text>
+            </View>
+          ))
+        )}
+      </Card>
+
       <View style={[styles.crisis, { backgroundColor: crisisBg, borderColor: crisisBorder }]}>
         <Pressable
           onPress={() => navigation.getParent()?.navigate('AlivIA' as never)}
@@ -341,6 +373,11 @@ const styles = StyleSheet.create({
   stat: { flex: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center' },
   statValue: { fontSize: 19, fontWeight: '800' },
   statLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 2 },
+  helpNote: { fontSize: 14, lineHeight: 20, marginTop: 4 },
+  helpEmpty: { fontSize: 16, lineHeight: 22, marginTop: 10 },
+  helpRow: { paddingVertical: 12 },
+  helpCopy: { fontSize: 16, fontWeight: '600', lineHeight: 22 },
+  helpMeta: { fontSize: 13, fontWeight: '600', marginTop: 2 },
   crisis: {
     marginTop: 8,
     padding: 14,
