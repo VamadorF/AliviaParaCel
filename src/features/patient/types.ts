@@ -1,3 +1,5 @@
+import type { CheckInDose } from '@/shared/core/checkin-dose';
+import type { CheckInNotes, GiDetail } from '@/shared/core/checkin-row';
 import type { ReliefAction } from '@/shared/data/trigger-catalog';
 
 export type { ReliefAction, ReliefLevel } from '@/shared/data/trigger-catalog';
@@ -44,6 +46,26 @@ export type CheckInRecord = {
   reliefActions?: ReliefAction[];
   /** Versión del catálogo con que se clasificó el registro. */
   catalogVersion?: string;
+  /**
+   * MOB-04 · Campos de paridad con la web. Todos opcionales: los registros antiguos no los traen.
+   * `toCheckInRow()` (utils/checkin.ts) los junta con los de arriba en un `CheckInRow` de la web.
+   */
+  /** Instante de captura en ISO 8601. */
+  createdAt?: string;
+  /** Urgencias: motivo y "qué pasó" (solo si `emergency`). */
+  emergencyReason?: string;
+  emergencyDetail?: string;
+  /** Cuidador (solo si `registrant === 'caregiver'`). */
+  caregiverName?: string;
+  caregiverRelation?: string;
+  /** Dosis con motivo y cantidad, en la misma forma que la web. */
+  doseDetails?: CheckInDose[];
+  /** Efecto adverso que el paciente quiere consultar con su equipo. */
+  adverseNote?: string;
+  /** Síntomas digestivos (náuseas, vómitos, deposiciones, apetito, reflujo). */
+  giDetail?: GiDetail;
+  /** Texto libre por sección. */
+  notes?: CheckInNotes;
 };
 
 export type Appointment = {

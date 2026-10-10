@@ -11,7 +11,7 @@ export async function goPacienteDemo(page: Page) {
 
 export async function completarCheckinMinimo(page: Page) {
   await page.getByTestId('diario-checkin-cta').click();
-  await expect(page.getByText('Paso 1 de 7')).toBeVisible();
+  await expect(page.getByText('Paso 1 de 8')).toBeVisible();
   await page.getByRole('button', { name: 'No' }).click();
   await page.getByRole('button', { name: 'Siguiente' }).click();
   await page.getByRole('button', { name: 'Yo' }).click();
