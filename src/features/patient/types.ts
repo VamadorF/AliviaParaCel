@@ -91,6 +91,8 @@ export type Message = {
   from: 'patient' | 'team' | 'alivia';
   body: string;
   at: string;
+  /** MOB-10 · Canal explícito. Ausente en mensajes anteriores: se infiere por `from`. */
+  channel?: 'assistant' | 'team';
 };
 
 export type ForumPost = {

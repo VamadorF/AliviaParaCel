@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useRef, useState } from 'react';
 import { FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { canWriteUserCache } from '@/features/auth/session/session';
 import {
   EMERGENCY_NOTICE,
   NO_MEDICAL_ADVICE_NOTICE,
@@ -10,7 +12,10 @@ import {
   getAssistantMode,
   saveAiSummaryNote,
 } from '@/features/patient/assistant/assistant';
+import { patientRepository } from '@/features/patient/api/patientApi';
+import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
+import { newTeamMessageId, persistTeamMessage } from '@/features/patient/messaging/teamMessage';
 import type { Message } from '@/features/patient/types';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Screen } from '@/shared/components/Screen';
@@ -30,12 +35,22 @@ function call131() {
   Linking.openURL('tel:131').catch(() => {});
 }
 
+function placeBaseMessage(message: Message): Channel | 'patient' {
+  if (message.channel === 'assistant' || message.channel === 'team') return message.channel;
+  if (message.from === 'alivia') return 'assistant';
+  if (message.from === 'team') return 'team';
+  return 'patient';
+}
+
 export function AliviaScreen() {
   const { palette } = useTheme();
   const { user } = useAuth();
   const { data } = usePatientSession();
+  const queryClient = useQueryClient();
   const [channel, setChannel] = useState<Channel>('assistant');
   const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [sent, setSent] = useState<Record<Channel, Message[]>>({ assistant: [], team: [] });
   const [summaryNotice, setSummaryNotice] = useState<string | null>(null);
 
@@ -47,16 +62,17 @@ export function AliviaScreen() {
   const teamAvailable = data.doctorLinked && data.messagingEnabled;
   const doctorName = data.appointment?.doctorName ?? null;
 
-  // Los mensajes del paciente enviados en esta sesión se guardan por canal;
-  // los mensajes base se separan por emisor (alivia → asistente, team → equipo).
+  // El asistente sigue en esta sesión (MOB-09). El equipo se lee del bootstrap persistido (MOB-10).
   const messages = useMemo(() => {
-    const base = data.messages;
-    const byChannel: Record<Channel, Message[]> = {
-      assistant: base.filter((m) => m.from === 'alivia'),
-      team: base.filter((m) => m.from === 'team'),
-    };
-    const patientBase = base.filter((m) => m.from === 'patient');
-    byChannel[teamAvailable && byChannel.team.length > 0 ? 'team' : 'assistant'].push(...patientBase);
+    const byChannel: Record<Channel, Message[]> = { assistant: [], team: [] };
+    const unscopedPatient: Message[] = [];
+    for (const message of data.messages) {
+      const place = placeBaseMessage(message);
+      if (place === 'patient') unscopedPatient.push(message);
+      else byChannel[place].push(message);
+    }
+    const legacy = teamAvailable && byChannel.team.length > 0 ? 'team' : 'assistant';
+    byChannel[legacy].push(...unscopedPatient);
     const merge = (c: Channel) =>
       [...byChannel[c], ...sent[c]].sort((a, b) => a.at.localeCompare(b.at));
     return { assistant: merge('assistant'), team: merge('team') };
@@ -67,7 +83,7 @@ export function AliviaScreen() {
 
   const send = () => {
     const body = draft.trim();
-    if (!body) return;
+    if (!body || sendingRef.current) return;
     const at = new Date();
     if (channel === 'assistant') {
       const reply = assistantReply(body, assistantCtx, getAssistantMode());
@@ -85,16 +101,28 @@ export function AliviaScreen() {
           },
         ],
       }));
-    } else {
-      setSent((prev) => ({
-        ...prev,
-        team: [
-          ...prev.team,
-          { id: `m-${at.getTime()}`, from: 'patient', body, at: at.toISOString() },
-        ],
-      }));
+      setDraft('');
+      return;
     }
-    setDraft('');
+    if (!user) return;
+    sendingRef.current = true;
+    setSending(true);
+    void persistTeamMessage(patientRepository, user.id, user.profile, {
+      id: newTeamMessageId(),
+      body,
+      at: at.toISOString(),
+    })
+      .then((result) => {
+        if (!result.ok) return;
+        if (canWriteUserCache(user.id)) {
+          queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), result.data);
+        }
+        setDraft('');
+      })
+      .finally(() => {
+        sendingRef.current = false;
+        setSending(false);
+      });
   };
 
   const patientWrote = messages.assistant.some((m) => m.from === 'patient');
@@ -333,11 +361,12 @@ export function AliviaScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Enviar"
-              accessibilityState={{ disabled: !draft.trim() }}
+              accessibilityState={{ disabled: !draft.trim() || sending }}
+              disabled={!draft.trim() || sending}
               onPress={send}
               style={({ pressed }) => [
                 styles.send,
-                { opacity: !draft.trim() ? 0.5 : pressed ? 0.8 : 1 },
+                { opacity: !draft.trim() || sending ? 0.5 : pressed ? 0.8 : 1 },
               ]}
             >
               <AppIcon name="send" size={18} color="#ffffff" />
