@@ -17,6 +17,7 @@ import {
   useAcknowledgeInstructionMutation,
   usePatientBootstrapQuery,
   useSetConsentMutation,
+  useSubmitPreConsultMutation,
 } from '@/features/patient/hooks/usePatientBootstrap';
 import {
   flushOutbox,
@@ -26,7 +27,12 @@ import {
   submitOutbox,
   type OutboxItem,
 } from '@/features/patient/sync/outbox';
-import type { CheckInRecord, ConsentEvent, PatientBootstrap } from '@/features/patient/types';
+import type {
+  CheckInRecord,
+  ConsentEvent,
+  PatientBootstrap,
+  PreConsultInput,
+} from '@/features/patient/types';
 import { consentHistoryOf, consentOf, type ConsentView } from '@/features/patient/utils/consent';
 import { useIsOnline } from '@/shared/network/useIsOnline';
 import { asyncStoragePort } from '@/shared/storage/asyncStorageAdapter';
@@ -47,6 +53,9 @@ type PatientSessionValue = {
   /** PAC-08 · Acusa la instrucción vigente con la fecha real. Si ya estaba acusada, no duplica. */
   acknowledgeInstruction: () => void;
   isAcknowledgingInstruction: boolean;
+  /** PAC-10 · Prepara la consulta vigente. Si ya hay respuesta, no duplica. */
+  submitPreConsult: (input: PreConsultInput) => void;
+  isSubmittingPreConsult: boolean;
   lastSavedMessage: string | null;
   clearSavedMessage: () => void;
 };
@@ -76,6 +85,7 @@ export function PatientSessionProvider({
   const bootstrapQuery = usePatientBootstrapQuery(online, ready);
   const consentMutation = useSetConsentMutation();
   const ackMutation = useAcknowledgeInstructionMutation();
+  const preConsultMutation = useSubmitPreConsultMutation();
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
   const [outbox, setOutbox] = useState<{ userId: string; items: OutboxItem[] }>({
     userId: '',
@@ -192,6 +202,14 @@ export function PatientSessionProvider({
     ackMutation.mutate();
   }, [ackMutation]);
 
+  const submitPreConsult = useCallback(
+    (input: PreConsultInput) => {
+      if (preConsultMutation.isPending) return;
+      preConsultMutation.mutate(input);
+    },
+    [preConsultMutation],
+  );
+
   const clearSavedMessage = useCallback(() => setLastSavedMessage(null), []);
 
   const value = useMemo(
@@ -206,6 +224,8 @@ export function PatientSessionProvider({
       isSavingConsent: consentMutation.isPending,
       acknowledgeInstruction,
       isAcknowledgingInstruction: ackMutation.isPending,
+      submitPreConsult,
+      isSubmittingPreConsult: preConsultMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     }),
@@ -220,6 +240,8 @@ export function PatientSessionProvider({
       consentMutation.isPending,
       acknowledgeInstruction,
       ackMutation.isPending,
+      submitPreConsult,
+      preConsultMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     ],

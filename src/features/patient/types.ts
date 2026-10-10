@@ -79,12 +79,32 @@ export type CheckInRecord = {
   quick?: boolean;
 };
 
+/** PAC-10 · PGIC: 1 = muchísimo mejor … 4 = sin cambios … 7 = muchísimo peor. */
+export type PgicValue = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/** Una preparación por consulta. No es un registro diario. */
+export type PreConsult = {
+  appointmentId: string;
+  topics: string;
+  pgic: PgicValue;
+  functionalGoal: string;
+  answeredAt: string;
+};
+
+export type PreConsultInput = {
+  topics: string;
+  pgic: PgicValue | null;
+  functionalGoal: string;
+};
+
 export type Appointment = {
   id: string;
   scheduledAt: string;
   doctorName: string;
   reason?: string;
   status: 'Pendiente' | 'Confirmada';
+  /** Ausente o null: el paciente no respondió. La consulta sigue igual. */
+  preConsult?: PreConsult | null;
 };
 
 export type TeamInstruction = {

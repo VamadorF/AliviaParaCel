@@ -7,10 +7,11 @@ import {
   patientRepository,
   resetPatientDemoData,
   setPatientConsent,
+  submitPatientPreConsult,
 } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import { flushOutbox } from '@/features/patient/sync/outbox';
-import type { ConsentAction, PatientBootstrap } from '@/features/patient/types';
+import type { ConsentAction, PatientBootstrap, PreConsultInput } from '@/features/patient/types';
 import { asyncStoragePort } from '@/shared/storage/asyncStorageAdapter';
 
 function cacheBootstrap(
@@ -59,6 +60,19 @@ export function useAcknowledgeInstructionMutation() {
   return useMutation({
     mutationFn: () =>
       acknowledgePatientInstruction(user!.id, user!.profile, new Date().toISOString()),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useSubmitPreConsultMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: PreConsultInput) =>
+      submitPatientPreConsult(user!.id, user!.profile, input, new Date().toISOString()),
     onSuccess: (data) => {
       cacheBootstrap(queryClient, user?.id, data);
     },

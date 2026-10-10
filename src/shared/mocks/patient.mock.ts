@@ -1,8 +1,14 @@
-import type { PatientBootstrap } from '@/features/patient/types';
+import type { Appointment, PatientBootstrap } from '@/features/patient/types';
 import { CATALOG_VERSION } from '@/shared/data/trigger-catalog';
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+function copyAppointment(appointment: Appointment | null): Appointment | null {
+  if (!appointment) return null;
+  if (!appointment.preConsult) return { ...appointment };
+  return { ...appointment, preConsult: { ...appointment.preConsult } };
+}
 
 export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
   return {
@@ -11,7 +17,7 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     messages: [...base.messages],
     posts: [...base.posts],
     medications: [...base.medications],
-    appointment: base.appointment ? { ...base.appointment } : null,
+    appointment: copyAppointment(base.appointment),
     instruction: base.instruction
       ? { ...base.instruction, id: base.instruction.id > 0 ? base.instruction.id : 1 }
       : null,

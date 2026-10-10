@@ -1,5 +1,10 @@
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
-import type { CheckInRecord, ConsentAction, PatientBootstrap } from '@/features/patient/types';
+import type {
+  CheckInRecord,
+  ConsentAction,
+  PatientBootstrap,
+  PreConsultInput,
+} from '@/features/patient/types';
 
 export type PatientRepository = {
   loadBootstrap: (
@@ -26,6 +31,17 @@ export type PatientRepository = {
   acknowledgeInstruction: (
     userId: string,
     profile: PatientProfileKind,
+    at: string,
+  ) => Promise<PatientBootstrap>;
+  /**
+   * PAC-10: guarda la preparación de la consulta vigente.
+   * `at` es la fecha real (ISO 8601) y el "ahora" del cálculo de 48 h.
+   * Si ya hay respuesta para esa consulta, devuelve la misma (no duplica ni pisa).
+   */
+  submitPreConsult: (
+    userId: string,
+    profile: PatientProfileKind,
+    input: PreConsultInput,
     at: string,
   ) => Promise<PatientBootstrap>;
   resetDemoData: (

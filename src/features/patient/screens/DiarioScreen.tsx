@@ -12,6 +12,7 @@ import { IconTile } from '@/shared/icons/AppIcon';
 import type { DiarioStackParamList } from '@/shared/types/navigation';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
+import { PreConsultBlock } from '@/features/patient/components/PreConsultBlock';
 import { isSharedWithTeam } from '@/features/patient/utils/consent';
 import { EMERGENCY_TEL, centerPhoneOf, telHref } from '@/features/patient/utils/crisis';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
@@ -38,7 +39,13 @@ function todayLabel() {
 export function DiarioScreen() {
   const { palette, mode } = useTheme();
   const { user } = useAuth();
-  const { data, acknowledgeInstruction, isAcknowledgingInstruction } = usePatientSession();
+  const {
+    data,
+    acknowledgeInstruction,
+    isAcknowledgingInstruction,
+    submitPreConsult,
+    isSubmittingPreConsult,
+  } = usePatientSession();
   const navigation =
     useNavigation<NativeStackNavigationProp<DiarioStackParamList>>();
 
@@ -112,6 +119,12 @@ export function DiarioScreen() {
               Por confirmar
             </Text>
           ) : null}
+          <PreConsultBlock
+            appointment={data.appointment}
+            nowMs={Date.now()}
+            submitting={isSubmittingPreConsult}
+            onSubmit={submitPreConsult}
+          />
         </Card>
       ) : null}
 

@@ -3,7 +3,7 @@ import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 import { asyncStoragePort } from '@/shared/storage/asyncStorageAdapter';
 import { createMockPatientRepository } from '@/features/patient/api/mockPatientRepository';
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
-import type { ConsentAction, PatientBootstrap } from '@/features/patient/types';
+import type { ConsentAction, PatientBootstrap, PreConsultInput } from '@/features/patient/types';
 
 /** Punto de intercambio: sustituir por implementación HTTP real. */
 export const patientRepository: PatientRepository = createMockPatientRepository({
@@ -40,6 +40,15 @@ export function acknowledgePatientInstruction(
   at: string,
 ): Promise<PatientBootstrap> {
   return patientRepository.acknowledgeInstruction(userId, profile, at);
+}
+
+export function submitPatientPreConsult(
+  userId: string,
+  profile: PatientProfileKind,
+  input: PreConsultInput,
+  at: string,
+): Promise<PatientBootstrap> {
+  return patientRepository.submitPreConsult(userId, profile, input, at);
 }
 
 export function resetPatientDemoData(
