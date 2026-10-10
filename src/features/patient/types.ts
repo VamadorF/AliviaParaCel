@@ -1,3 +1,7 @@
+import type { ReliefAction } from '@/shared/data/trigger-catalog';
+
+export type { ReliefAction, ReliefLevel } from '@/shared/data/trigger-catalog';
+
 export type MedicationStatus = 'activo' | 'suspendido' | 'finalizado';
 
 export type Medication = {
@@ -32,6 +36,14 @@ export type CheckInRecord = {
   emergency: boolean;
   registrant: 'self' | 'caregiver';
   doses: { medId: string; choice: DoseChoice }[];
+  /** Atribuciones antiguas en texto libre. Los registros viejos solo traen esto. */
+  why?: string[];
+  /** DIF-01 · Gatillantes: etiquetas del catálogo o `Otro: texto` (ver `otherTrigger`). */
+  triggers?: string[];
+  /** DIF-01 · Acciones de alivio con el alivio que reportó el paciente. */
+  reliefActions?: ReliefAction[];
+  /** Versión del catálogo con que se clasificó el registro. */
+  catalogVersion?: string;
 };
 
 export type Appointment = {
