@@ -10,14 +10,22 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import {
   useAppendCheckInMutation,
   usePatientBootstrapQuery,
+  useSetConsentMutation,
 } from '@/features/patient/hooks/usePatientBootstrap';
-import type { CheckInRecord, PatientBootstrap } from '@/features/patient/types';
+import type { CheckInRecord, ConsentEvent, PatientBootstrap } from '@/features/patient/types';
+import { consentHistoryOf, consentOf, type ConsentView } from '@/features/patient/utils/consent';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 type PatientSessionValue = {
   data: PatientBootstrap;
   isLoading: boolean;
   saveCheckIn: (record: CheckInRecord) => void;
+  /** MOB-06 · Estado vigente del consentimiento (persistido) e historial. */
+  consent: ConsentView;
+  consentHistory: ConsentEvent[];
+  /** Acepta (`true`) o revoca (`false`) el consentimiento; persiste con fecha real y versión. */
+  setConsent: (granted: boolean) => void;
+  isSavingConsent: boolean;
   lastSavedMessage: string | null;
   clearSavedMessage: () => void;
 };
@@ -44,26 +52,46 @@ export function PatientSessionProvider({
   const { user } = useAuth();
   const bootstrapQuery = usePatientBootstrapQuery();
   const appendMutation = useAppendCheckInMutation();
+  const consentMutation = useSetConsentMutation();
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
+
+  const data = bootstrapQuery.data ?? EMPTY_BOOTSTRAP;
+  const consent = useMemo(() => consentOf(data), [data]);
+  const consentHistory = useMemo(() => consentHistoryOf(data), [data]);
 
   const saveCheckIn = useCallback(
     (record: CheckInRecord) => {
       appendMutation.mutate(record, {
-        onSuccess: () => setLastSavedMessage('Registro guardado'),
+        // El repositorio marca el registro según el consentimiento vigente (MOB-06).
+        onSuccess: (saved) =>
+          setLastSavedMessage(
+            consentOf(saved).granted
+              ? 'Registro guardado'
+              : 'Registro guardado solo en este teléfono',
+          ),
       });
     },
     [appendMutation],
   );
 
-  const clearSavedMessage = useCallback(() => setLastSavedMessage(null), []);
+  const setConsent = useCallback(
+    (granted: boolean) => {
+      consentMutation.mutate(granted ? 'aceptado' : 'revocado');
+    },
+    [consentMutation],
+  );
 
-  const data = bootstrapQuery.data ?? EMPTY_BOOTSTRAP;
+  const clearSavedMessage = useCallback(() => setLastSavedMessage(null), []);
 
   const value = useMemo(
     () => ({
       data,
       isLoading: bootstrapQuery.isLoading,
       saveCheckIn,
+      consent,
+      consentHistory,
+      setConsent,
+      isSavingConsent: consentMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     }),
@@ -71,6 +99,10 @@ export function PatientSessionProvider({
       data,
       bootstrapQuery.isLoading,
       saveCheckIn,
+      consent,
+      consentHistory,
+      setConsent,
+      consentMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     ],

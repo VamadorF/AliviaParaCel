@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { ConsentCard } from '@/features/patient/components/ConsentCard';
 import { useResetDemoDataMutation } from '@/features/patient/hooks/usePatientBootstrap';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
@@ -52,6 +53,7 @@ export function PatientProfileScreen() {
           </View>
         </View>
       </Card>
+      <ConsentCard />
       {user?.profile === 'demo' ? (
         <>
           <Button

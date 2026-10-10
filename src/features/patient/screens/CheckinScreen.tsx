@@ -9,6 +9,7 @@ import { EVA_FACES, PainFace } from '@/shared/icons/PainFace';
 import { DOSE_REASON_LABEL, DOSE_TAKEN_LABEL, allowedReasons, doseNeedsReason } from '@/shared/core/checkin-dose';
 import type { DoseReasonKind } from '@/shared/core/checkin-dose';
 import { AI_NOTICE_TEXT } from '@/shared/data/ai-notice';
+import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
 import { Field, NoteToggle, OptionChip, YesNo } from '@/features/patient/components/CheckinFields';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import {
@@ -118,6 +119,7 @@ export function CheckinScreen() {
       <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
         Check-in diario
       </Text>
+      <ConsentBanner context="checkin" />
       <View style={[styles.notice, { backgroundColor: palette.primarySoft, borderColor: palette.border }]}>
         <IconTile name="shield" color={palette.primary} background={palette.surface} size={32} iconSize={16} />
         <Text style={{ flex: 1, color: palette.text, fontSize: 13, lineHeight: 20 }} testID="checkin-ai-notice">

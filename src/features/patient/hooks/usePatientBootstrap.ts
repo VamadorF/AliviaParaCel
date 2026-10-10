@@ -4,9 +4,10 @@ import {
   appendPatientCheckIn,
   fetchPatientBootstrap,
   resetPatientDemoData,
+  setPatientConsent,
 } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
-import type { CheckInRecord } from '@/features/patient/types';
+import type { CheckInRecord, ConsentAction } from '@/features/patient/types';
 
 export function usePatientBootstrapQuery() {
   const { user } = useAuth();
@@ -25,6 +26,21 @@ export function useAppendCheckInMutation() {
   return useMutation({
     mutationFn: (record: CheckInRecord) =>
       appendPatientCheckIn(user!.id, user!.profile, record),
+    onSuccess: (data) => {
+      if (user) {
+        queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), data);
+      }
+    },
+  });
+}
+
+export function useSetConsentMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (action: ConsentAction) =>
+      setPatientConsent(user!.id, user!.profile, action, new Date().toISOString()),
     onSuccess: (data) => {
       if (user) {
         queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), data);

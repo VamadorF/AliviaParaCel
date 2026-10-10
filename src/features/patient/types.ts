@@ -66,6 +66,11 @@ export type CheckInRecord = {
   giDetail?: GiDetail;
   /** Texto libre por sección. */
   notes?: CheckInNotes;
+  /**
+   * MOB-06 · `false` = registrado con el consentimiento revocado: queda solo en el teléfono y no se
+   * comparte con el equipo. Ausente = compartido (registros anteriores a MOB-06).
+   */
+  sharedWithTeam?: boolean;
 };
 
 export type Appointment = {
@@ -95,6 +100,24 @@ export type ForumPost = {
   at: string;
 };
 
+/** MOB-06 · Misma forma que ConsentState / ConsentEventRow de la web (PAC-02), sin RUT: el bootstrap ya es del paciente. */
+export type ConsentAction = 'aceptado' | 'revocado';
+
+export type ConsentState = {
+  status: ConsentAction;
+  /** Versión del texto de consentimiento aceptado o revocado. */
+  version: string;
+  /** Fecha real (ISO 8601) del último cambio. */
+  updatedAt: string;
+};
+
+export type ConsentEvent = {
+  id: string;
+  action: ConsentAction;
+  version: string;
+  createdAt: string;
+};
+
 export type PatientBootstrap = {
   medications: Medication[];
   checkIns: CheckInRecord[];
@@ -104,4 +127,8 @@ export type PatientBootstrap = {
   posts: ForumPost[];
   messagingEnabled: boolean;
   doctorLinked: boolean;
+  /** MOB-06 · Opcional: sin registro se asume aceptado, sin fecha (nunca se inventa una). */
+  consent?: ConsentState;
+  /** MOB-06 · Historial append-only, del más reciente al más antiguo. */
+  consentHistory?: ConsentEvent[];
 };

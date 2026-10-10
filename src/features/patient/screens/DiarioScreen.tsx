@@ -11,6 +11,8 @@ import { dailyPainSeries, PainChart } from '@/shared/charts/PainChart';
 import { IconTile } from '@/shared/icons/AppIcon';
 import type { DiarioStackParamList } from '@/shared/types/navigation';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
+import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
+import { isSharedWithTeam } from '@/features/patient/utils/consent';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
@@ -58,6 +60,7 @@ export function DiarioScreen() {
   return (
     <Screen>
       <BetaBanner />
+      <ConsentBanner context="diario" />
       <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
         Mi Diario
       </Text>
@@ -125,6 +128,14 @@ export function DiarioScreen() {
                     .filter(Boolean)
                     .join(' · ') || '—'}
                 </Text>
+                {!isSharedWithTeam(r) ? (
+                  <Text
+                    style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}
+                    testID={`checkin-not-shared-${r.id}`}
+                  >
+                    No compartido con tu equipo
+                  </Text>
+                ) : null}
               </View>
             </View>
           ))}

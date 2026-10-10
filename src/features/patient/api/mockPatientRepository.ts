@@ -8,6 +8,7 @@ import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 import type { StoragePort } from '@/shared/storage/storagePort';
 import type { PatientBootstrap } from '@/features/patient/types';
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
+import { applyConsent, stampSharing } from '@/features/patient/utils/consent';
 
 const STORAGE_PREFIX = '@alivia/patient-bootstrap/v1/';
 
@@ -67,10 +68,19 @@ export function createMockPatientRepository({
     async appendCheckIn(userId, profile, record) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      // MOB-06: con el consentimiento revocado el registro queda en el teléfono, marcado como no compartido.
       const next = {
         ...current,
-        checkIns: [record, ...current.checkIns],
+        checkIns: [stampSharing(record, current), ...current.checkIns],
       };
+      await storage.setItem(storageKey(userId), JSON.stringify(next));
+      return cloneBootstrap(next);
+    },
+
+    async setConsent(userId, profile, action, at) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      const next = applyConsent(current, action, at);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return cloneBootstrap(next);
     },

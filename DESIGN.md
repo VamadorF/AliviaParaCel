@@ -44,6 +44,11 @@ Contraste texto normal ≥ 4.5:1; UI ≥ 3:1.
 - Errores: “Falta: …” accionable
 - Crisis (131) visualmente distinto del CTA “Guardar registro”
 - Banner: “BETA · datos de demostración”
+- Consentimiento (MOB-06, paridad PAC-02 web):
+  - Perfil: tarjeta "Consentimiento de tratamiento de datos" con estado en texto ("Aceptado · vigente desde …" / "Revocado el …"), un botón de 48 dp ("Revocar" ghost / "Aceptar" primario) e historial con fecha real y versión. Estado nunca solo por color.
+  - Revocado: banner `warning` (borde + fondo suave, texto `text`, nunca texto naranja sobre blanco) en Diario y en el check-in, con "Puedes reactivarlo en Perfil". Es aviso, no bloquea el check-in.
+  - Check-in guardado con consentimiento revocado queda solo en el teléfono y el Diario lo rotula "No compartido con tu equipo".
+  - Cambios de estado y mensajes de guardado van en live region `polite`.
 - Gatillantes y alivios (DIF-01; la UI llega en DIF-03):
   - Dos listas separadas: “¿Hiciste algo para aliviarte?” (alivio por acción: nada / algo / mucho) y “¿Qué crees que lo gatilló?”. Nunca una sola lista mezclada.
   - Opciones del catálogo `src/shared/data/trigger-catalog.ts` como texto en chips de ≥ 48 dp, **sin emojis**; “Otro” abre un campo de texto con label visible.

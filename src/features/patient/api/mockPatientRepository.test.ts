@@ -62,6 +62,41 @@ describe('CAL-01 · mockPatientRepository (persistencia)', () => {
     expect(data.checkIns.some((c) => c.id === 'c1')).toBe(true);
   });
 
+  it('MOB-06: revocar persiste entre cargas con fecha real y versión', async () => {
+    const storage = createMemoryStorage();
+    const patient = createMockPatientRepository({ storage, delayMs: 0 });
+    const at = '2026-10-05T15:30:00.000Z';
+    await patient.setConsent(demoUser.id, 'demo', 'revocado', at);
+
+    // "Recarga": un repositorio nuevo sobre el mismo storage.
+    const reloaded = await createMockPatientRepository({ storage, delayMs: 0 }).loadBootstrap(demoUser.id, 'demo');
+    expect(reloaded.consent).toEqual({ status: 'revocado', version: '1.0', updatedAt: at });
+    expect(reloaded.consentHistory).toHaveLength(1);
+    expect(reloaded.consentHistory?.[0]).toMatchObject({ action: 'revocado', createdAt: at });
+  });
+
+  it('MOB-06: check-in con consentimiento revocado queda local, marcado no compartido', async () => {
+    const patient = repo();
+    await patient.setConsent(cleanUser.id, 'clean', 'revocado', '2026-10-05T15:30:00.000Z');
+    const next = await patient.appendCheckIn(cleanUser.id, 'clean', {
+      id: 'solo-local',
+      date: '2026-10-06',
+      time: '10:00',
+      pain: 5,
+      zones: [],
+      emergency: false,
+      registrant: 'self',
+      doses: [],
+    });
+    expect(next.checkIns[0].id).toBe('solo-local');
+    expect(next.checkIns[0].sharedWithTeam).toBe(false);
+
+    await patient.setConsent(cleanUser.id, 'clean', 'aceptado', '2026-10-07T08:00:00.000Z');
+    const after = await patient.appendCheckIn(cleanUser.id, 'clean', { ...next.checkIns[0], id: 'compartido' });
+    expect(after.checkIns[0].sharedWithTeam).toBe(true);
+    expect(after.checkIns.find((c) => c.id === 'solo-local')?.sharedWithTeam).toBe(false);
+  });
+
   it('reset demo vuelve al fixture', async () => {
     const patient = repo();
     await patient.appendCheckIn(demoUser.id, 'demo', {

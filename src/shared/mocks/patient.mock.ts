@@ -13,6 +13,8 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     medications: [...base.medications],
     appointment: base.appointment ? { ...base.appointment } : null,
     instruction: base.instruction ? { ...base.instruction } : null,
+    consent: base.consent ? { ...base.consent } : undefined,
+    consentHistory: base.consentHistory ? [...base.consentHistory] : undefined,
   };
 }
 
