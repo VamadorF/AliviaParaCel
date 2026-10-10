@@ -13,18 +13,31 @@ import { Field, NoteToggle, OptionChip, YesNo } from '@/features/patient/compone
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import {
   APPETITE_LABEL,
-  CHECKIN_STEPS,
   STEP,
   TAKEN_OPTIONS,
   allMissing,
+  attributionSummaryOf,
   buildCheckInRecord,
   giSummary,
   initialDraft,
   lastCaregiverOf,
+  nextStep,
   patchDose,
+  patchRelief,
+  prevStep,
   sanitizeBowel,
+  stepFlow,
   stepMissing,
+  toggleRelief,
+  toggleTrigger,
 } from '@/features/patient/utils/checkin';
+import {
+  attributionContext,
+  reliefOptions,
+  showReliefTriggerSteps,
+  triggerOptions,
+} from '@/features/patient/utils/checkin-steps';
+import { OTHER_ID, RELIEF_LEVELS, RELIEF_LEVEL_LABEL, reliefLabel } from '@/shared/data/trigger-catalog';
 import type { Appetite, CheckinDraft } from '@/features/patient/utils/checkin';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
 import { painColor, painLabel } from '@/features/patient/utils/pain';
@@ -48,18 +61,34 @@ export function CheckinScreen() {
 
   const update = (patch: Partial<CheckinDraft>) => setDraft((d) => ({ ...d, ...patch }));
   const blockers = useMemo(() => stepMissing(step, draft, medications), [step, draft, medications]);
-  const isLast = step === CHECKIN_STEPS - 1;
+  const isLast = step === STEP.resumen;
+
+  // DIF-03: mismas reglas que la web (DIF-02). Los pasos opcionales nunca bloquean el guardado.
+  const { previousPain, firstOfDay } = useMemo(
+    () => attributionContext(data.checkIns, new Date()),
+    [data.checkIns],
+  );
+  const showAttribution = showReliefTriggerSteps({ pain: draft.pain, previousPain, firstOfDay });
+  const flow = stepFlow(showAttribution);
+  const reliefOpts = useMemo(() => reliefOptions(), []);
+  const triggerOpts = useMemo(() => triggerOptions(), []);
 
   const goNext = () => {
     if (blockers.length > 0) return;
-    if (!isLast) setStep((s) => s + 1);
+    if (!isLast) setStep((s) => nextStep(s, showAttribution));
     else submit();
+  };
+
+  const skipAttribution = () => {
+    if (step === STEP.alivios) update({ reliefSel: [] });
+    else update({ triggerSel: [], triggerOther: '' });
+    setStep((s) => nextStep(s, showAttribution));
   };
 
   const submit = () => {
     if (allMissing(draft, medications).length > 0) return;
     const now = new Date();
-    const record = buildCheckInRecord(draft, medications, now, `local-${now.getTime()}`);
+    const record = buildCheckInRecord(draft, medications, now, `local-${now.getTime()}`, showAttribution);
     if (!record) return;
     saveCheckIn(record);
     navigation.goBack();
@@ -69,6 +98,7 @@ export function CheckinScreen() {
     setDraft((d) => ({ ...d, doses: { ...d.doses, [medId]: patchDose(d.doses[medId], patch) } }));
 
   const summary = giSummary(draft);
+  const attributionSummary = attributionSummaryOf(draft, showAttribution);
   const diffDoses = medications
     .map((m) => ({ m, d: draft.doses[m.id] }))
     .filter(({ d }) => d && doseNeedsReason(d.taken));
@@ -83,7 +113,7 @@ export function CheckinScreen() {
         style={[styles.step, { color: palette.textMuted }]}
         accessibilityLiveRegion="polite"
       >
-        Paso {step + 1} de {CHECKIN_STEPS}
+        Paso {flow.indexOf(step) + 1} de {flow.length}
       </Text>
       <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
         Check-in diario
@@ -400,6 +430,99 @@ export function CheckinScreen() {
         </View>
       ) : null}
 
+      {step === STEP.alivios ? (
+        <View testID="checkin-relief-step">
+          <Text style={styles.label} accessibilityRole="header">
+            ¿Hiciste algo para aliviarte?{' '}
+            <Text style={{ fontSize: 13, fontWeight: '600', color: palette.textMuted }}>(opcional)</Text>
+          </Text>
+          <Text style={[styles.hint, { color: palette.textMuted }]}>
+            Marca lo que hiciste y cuánto ayudó. Puedes omitirlo.
+          </Text>
+          <View style={styles.rowWrap}>
+            {reliefOpts.map((o) => (
+              <OptionChip
+                key={o.id}
+                label={o.suggested ? `${o.label} ★` : o.label}
+                selected={draft.reliefSel.some((a) => a.action === o.id)}
+                accessibilityLabel={o.suggested ? `${o.label}, sugerido` : o.label}
+                onPress={() => update({ reliefSel: toggleRelief(draft.reliefSel, o.id) })}
+              />
+            ))}
+          </View>
+          {draft.reliefSel.map((a) => {
+            const name = a.action === OTHER_ID ? 'Otro' : reliefLabel(a);
+            return (
+              <View key={a.action} style={[styles.reliefRow, { borderTopColor: palette.border }]}>
+                <Text style={[styles.sub, { color: palette.text }]}>{name}: ¿cuánto alivió?</Text>
+                {a.action === OTHER_ID ? (
+                  <Field
+                    label="¿Qué hiciste?"
+                    value={a.text ?? ''}
+                    onChangeText={(t) => update({ reliefSel: patchRelief(draft.reliefSel, a.action, { text: t }) })}
+                    testID="checkin-relief-other"
+                  />
+                ) : null}
+                <View style={styles.rowWrap}>
+                  {RELIEF_LEVELS.map((l) => (
+                    <OptionChip
+                      key={l}
+                      label={RELIEF_LEVEL_LABEL[l]}
+                      selected={a.relief === l}
+                      accessibilityLabel={`${name}: alivió ${RELIEF_LEVEL_LABEL[l].toLowerCase()}`}
+                      onPress={() => update({ reliefSel: patchRelief(draft.reliefSel, a.action, { relief: l }) })}
+                    />
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+          <Button
+            label="Omitir"
+            variant="ghost"
+            onPress={skipAttribution}
+            accessibilityLabel="Omitir alivios"
+            testID="checkin-relief-skip"
+          />
+        </View>
+      ) : null}
+
+      {step === STEP.gatillantes ? (
+        <View testID="checkin-trigger-step">
+          <Text style={styles.label} accessibilityRole="header">
+            ¿Qué crees que lo gatilló?{' '}
+            <Text style={{ fontSize: 13, fontWeight: '600', color: palette.textMuted }}>(opcional)</Text>
+          </Text>
+          <Text style={[styles.hint, { color: palette.textMuted }]}>Puedes marcar varios. Puedes omitirlo.</Text>
+          <View style={styles.rowWrap}>
+            {triggerOpts.map((o) => (
+              <OptionChip
+                key={o.id}
+                label={o.suggested ? `${o.label} ★` : o.label}
+                selected={draft.triggerSel.includes(o.id)}
+                accessibilityLabel={o.suggested ? `${o.label}, sugerido` : o.label}
+                onPress={() => update({ triggerSel: toggleTrigger(draft.triggerSel, o.id) })}
+              />
+            ))}
+          </View>
+          {draft.triggerSel.includes(OTHER_ID) ? (
+            <Field
+              label="Describe el gatillante"
+              value={draft.triggerOther}
+              onChangeText={(t) => update({ triggerOther: t })}
+              testID="checkin-trigger-other"
+            />
+          ) : null}
+          <Button
+            label="Omitir"
+            variant="ghost"
+            onPress={skipAttribution}
+            accessibilityLabel="Omitir gatillantes"
+            testID="checkin-trigger-skip"
+          />
+        </View>
+      ) : null}
+
       {isLast ? (
         <View style={styles.faceHero}>
           <PainFace value={draft.pain} size={64} />
@@ -427,12 +550,15 @@ export function CheckinScreen() {
               Incluye una consulta por efecto adverso.
             </Text>
           ) : null}
+          {attributionSummary ? (
+            <Text style={[styles.summary, { color: palette.text }]}>{attributionSummary}</Text>
+          ) : null}
         </View>
       ) : null}
 
       <View style={styles.actions}>
         {step > 0 ? (
-          <Button label="Atrás" variant="ghost" onPress={() => setStep((s) => s - 1)} />
+          <Button label="Atrás" variant="ghost" onPress={() => setStep((s) => prevStep(s, showAttribution))} />
         ) : (
           <Button label="Cerrar" variant="ghost" onPress={() => navigation.goBack()} />
         )}
@@ -453,6 +579,8 @@ const styles = StyleSheet.create({
   h1: { fontSize: 24, fontWeight: '800', marginBottom: 8 },
   label: { fontSize: 16, fontWeight: '700', marginBottom: 10 },
   sub: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  hint: { fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  reliefRow: { borderTopWidth: 1, paddingTop: 12, marginTop: 4, marginBottom: 8 },
   summary: { lineHeight: 22, textAlign: 'center', marginTop: 4 },
   row: { flexDirection: 'row', flexWrap: 'wrap' },
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },

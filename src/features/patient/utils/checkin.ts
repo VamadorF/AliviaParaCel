@@ -9,10 +9,22 @@ import {
 import type { CheckInDose, DoseTakenKind } from '@/shared/core/checkin-dose';
 import type { CheckInNotes, CheckInRow, GiDetail } from '@/shared/core/checkin-row';
 import { lastCaregiver } from '@/shared/core/derived-patient';
-import type { CheckInRecord, DoseChoice, Medication } from '@/features/patient/types';
+import {
+  CATALOG_VERSION,
+  OTHER_ID,
+  OTHER_PREFIX,
+  reliefLabel,
+  sanitizeReliefActions,
+  sanitizeTriggers,
+  triggerLabel,
+} from '@/shared/data/trigger-catalog';
+import type { CheckInRecord, DoseChoice, Medication, ReliefAction } from '@/features/patient/types';
 
-/** Pasos del check-in (MOB-04). El último es el resumen. */
-export const CHECKIN_STEPS = 8;
+/**
+ * Pasos del check-in (MOB-04, DIF-03). El último es el resumen.
+ * `alivios` y `gatillantes` son opcionales y solo se muestran según `stepFlow`.
+ */
+export const CHECKIN_STEPS = 10;
 export const STEP = {
   urgencias: 0,
   quien: 1,
@@ -21,8 +33,29 @@ export const STEP = {
   animo: 4,
   medicamentos: 5,
   digestivo: 6,
-  resumen: 7,
+  alivios: 7,
+  gatillantes: 8,
+  resumen: 9,
 } as const;
+
+/** Pasos que se recorren: los opcionales de DIF-03 solo si `showAttribution`. */
+export function stepFlow(showAttribution: boolean): number[] {
+  return Array.from({ length: CHECKIN_STEPS }, (_, i) => i).filter(
+    (s) => showAttribution || (s !== STEP.alivios && s !== STEP.gatillantes),
+  );
+}
+
+/** Paso siguiente dentro del flujo (se queda en el último). */
+export function nextStep(step: number, showAttribution: boolean): number {
+  const flow = stepFlow(showAttribution);
+  return flow.find((s) => s > step) ?? flow[flow.length - 1];
+}
+
+/** Paso anterior dentro del flujo (se queda en el primero). */
+export function prevStep(step: number, showAttribution: boolean): number {
+  const flow = stepFlow(showAttribution);
+  return [...flow].reverse().find((s) => s < step) ?? flow[0];
+}
 
 export type Registrant = 'self' | 'caregiver';
 export type Appetite = NonNullable<GiDetail['appetite']>;
@@ -48,6 +81,11 @@ export type CheckinDraft = {
   bowel: string;
   appetite: Appetite;
   reflux: boolean;
+  /** DIF-03 · Alivios elegidos, con el nivel que reportó (opcional). */
+  reliefSel: ReliefAction[];
+  /** DIF-03 · Gatillantes elegidos: ids del catálogo, o `otro` + `triggerOther` (opcional). */
+  triggerSel: string[];
+  triggerOther: string;
 };
 
 export const EMPTY_NOTES: CheckInNotes = { zones: '', mood: '', sleep: '' };
@@ -118,7 +156,24 @@ export function initialDraft(
     bowel: '',
     appetite: 'normal',
     reflux: false,
+    reliefSel: [],
+    triggerSel: [],
+    triggerOther: '',
   };
+}
+
+/** Marca o desmarca un alivio. Al marcarlo parte en "algo"; "Otro" lleva texto libre. */
+export function toggleRelief(sel: ReliefAction[], id: string): ReliefAction[] {
+  if (sel.some((a) => a.action === id)) return sel.filter((a) => a.action !== id);
+  return [...sel, { action: id, relief: 'algo', ...(id === OTHER_ID ? { text: '' } : {}) }];
+}
+
+export function patchRelief(sel: ReliefAction[], id: string, patch: Partial<ReliefAction>): ReliefAction[] {
+  return sel.map((a) => (a.action === id ? { ...a, ...patch } : a));
+}
+
+export function toggleTrigger(sel: string[], id: string): string[] {
+  return sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id];
 }
 
 /** Solo dígitos y máximo 2 (deposiciones 0–99). */
@@ -189,12 +244,32 @@ export function giSummary(draft: CheckinDraft): string | null {
   return parts.length ? parts.join(', ') : null;
 }
 
-/** Arma el registro a guardar. Los campos del cuidador y de urgencias solo van si aplican. */
+/** Resumen de lo que el paciente contestó en los pasos opcionales; null si no hay nada que mostrar. */
+export function attributionSummaryOf(draft: CheckinDraft, showAttribution: boolean): string | null {
+  if (!showAttribution) return null;
+  const triggers = sanitizeTriggers(
+    draft.triggerSel.map((t) => (t === OTHER_ID ? OTHER_PREFIX + draft.triggerOther.trim() : t)),
+  );
+  const reliefs = sanitizeReliefActions(draft.reliefSel);
+  const parts: string[] = [];
+  if (triggers.length) parts.push(`Gatillantes: ${triggers.map(triggerLabel).join(', ')}.`);
+  if (reliefs.length) {
+    parts.push(`Alivios: ${reliefs.map((a) => `${reliefLabel(a)} (${a.relief})`).join(', ')}.`);
+  }
+  return parts.length ? parts.join(' ') : null;
+}
+
+/**
+ * Arma el registro a guardar. Los campos del cuidador y de urgencias solo van si aplican.
+ * `showAttribution` (DIF-03): si los pasos de alivios y gatillantes estaban visibles; si no, lo elegido
+ * se descarta. Sin nada contestado el registro queda igual que antes (sin los tres campos).
+ */
 export function buildCheckInRecord(
   draft: CheckinDraft,
   medications: Medication[],
   now: Date,
   id: string,
+  showAttribution = false,
 ): CheckInRecord | null {
   if (draft.emergency === null || draft.registrant === null) return null;
   const doseDetails = dosesInOrder(draft, medications).map((d) => ({
@@ -203,6 +278,12 @@ export function buildCheckInRecord(
     reasonText: d.reasonText.trim(),
   }));
   const caregiver = draft.registrant === 'caregiver';
+  const triggers = sanitizeTriggers(
+    showAttribution
+      ? draft.triggerSel.map((t) => (t === OTHER_ID ? OTHER_PREFIX + draft.triggerOther.trim() : t))
+      : [],
+  );
+  const reliefActions = sanitizeReliefActions(showAttribution ? draft.reliefSel : []);
   return {
     id,
     date: now.toISOString().slice(0, 10),
@@ -227,6 +308,9 @@ export function buildCheckInRecord(
       mood: draft.notes.mood.trim(),
       sleep: draft.notes.sleep.trim(),
     },
+    ...(triggers.length || reliefActions.length
+      ? { triggers, reliefActions, catalogVersion: CATALOG_VERSION }
+      : {}),
   };
 }
 

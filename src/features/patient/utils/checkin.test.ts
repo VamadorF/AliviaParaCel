@@ -107,8 +107,8 @@ describe('stepMissing — mensajes "Falta: …" iguales a los de la web', () => 
     expect(allMissing(d, [med])).toEqual(['urgencias', 'quién registra', 'al menos una zona']);
   });
 
-  it('el check-in tiene 8 pasos y el resumen es el último', () => {
-    expect(CHECKIN_STEPS).toBe(8);
+  it('el check-in tiene 10 pasos y el resumen es el último', () => {
+    expect(CHECKIN_STEPS).toBe(10);
     expect(STEP.resumen).toBe(CHECKIN_STEPS - 1);
   });
 });

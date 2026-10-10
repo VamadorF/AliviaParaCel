@@ -41,6 +41,34 @@ export const RELIEF_CATALOG: CatalogItem[] = [
 
 export const RELIEF_LEVELS: readonly ReliefLevel[] = ['nada', 'algo', 'mucho'];
 
+/** Texto visible de cada nivel (mismo que la web). */
+export const RELIEF_LEVEL_LABEL: Record<ReliefLevel, string> = { nada: 'Nada', algo: 'Algo', mucho: 'Mucho' };
+
+/** Gatillantes listos para guardar: sin vacíos, sin duplicados, "Otro" solo con texto (`otro:<texto>`). */
+export function sanitizeTriggers(input: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const v of input) {
+    const t = v.trim();
+    if (!t || t === OTHER_PREFIX || t === OTHER_ID) continue;
+    if (!out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
+/** Alivios listos para guardar: nivel válido, "Otro" solo con texto, sin duplicados. */
+export function sanitizeReliefActions(input: readonly ReliefAction[]): ReliefAction[] {
+  const out: ReliefAction[] = [];
+  for (const a of input) {
+    const action = a.action.trim();
+    if (!action || !RELIEF_LEVELS.includes(a.relief)) continue;
+    const text = (a.text ?? '').trim();
+    if (action === OTHER_ID && !text) continue;
+    if (out.some((x) => x.action === action && (x.text ?? '') === text)) continue;
+    out.push({ action, relief: a.relief, ...(text ? { text } : {}) });
+  }
+  return out;
+}
+
 export function otherTrigger(text: string): string {
   const t = text.trim();
   return t ? `${OTHER_PREFIX}${t}` : OTHER_ID;
