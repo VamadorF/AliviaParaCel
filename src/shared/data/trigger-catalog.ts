@@ -1,107 +1,134 @@
 /**
- * DIF-01 · Catálogo versionado de gatillantes y alivios.
- *
- * Espejo móvil del catálogo web (mismos nombres de campo en el check-in:
- * `triggers`, `reliefActions`, `catalogVersion`). Los valores guardados son las
- * etiquetas canónicas en español, igual que el `why` histórico, para que las
- * estadísticas por texto de la web y del móvil cuenten lo mismo.
- * Si cambia una etiqueta o se agrega una, subir `CATALOG_VERSION`.
+ * DIF-01 · Espejo del catálogo web (`AlivIACare/src/data/checkin-catalog.ts`).
+ * Los `triggers` guardan ids estables; los alivios usan `action` = id del catálogo.
  */
-
-export const CATALOG_VERSION = '1';
-
-/** Etiqueta de la opción libre; el texto del paciente viaja en `text`. */
-export const OTHER_LABEL = 'Otro';
-
-/** Gatillante libre: `triggers` es `string[]`, así que el texto viaja en la etiqueta. */
-export function otherTrigger(text: string): string {
-  const t = text.trim();
-  return t ? `${OTHER_LABEL}: ${t}` : OTHER_LABEL;
-}
-
 export type ReliefLevel = 'nada' | 'algo' | 'mucho';
 export type ReliefAction = { action: string; relief: ReliefLevel; text?: string };
 
+export const CATALOG_VERSION = '1.0';
+export const OTHER_ID = 'otro';
+export const OTHER_PREFIX = 'otro:';
+
+export interface CatalogItem {
+  id: string;
+  label: string;
+}
+
+export const TRIGGER_CATALOG: CatalogItem[] = [
+  { id: 'estres', label: 'Estrés' },
+  { id: 'mala-noche', label: 'Mala noche' },
+  { id: 'cambio-clima', label: 'Cambio de clima' },
+  { id: 'sobreesfuerzo', label: 'Sobreesfuerzo' },
+  { id: 'postura', label: 'Postura prolongada' },
+  { id: 'frio', label: 'Frío' },
+  { id: 'comida', label: 'Alimentos o comidas' },
+  { id: 'pantallas', label: 'Pantallas o luz intensa' },
+  { id: 'omiti-medicacion', label: 'Omití mi medicación' },
+  { id: 'ciclo-hormonal', label: 'Ciclo hormonal' },
+];
+
+export const RELIEF_CATALOG: CatalogItem[] = [
+  { id: 'medicacion', label: 'Tomé mi medicación' },
+  { id: 'descanso', label: 'Descansé mejor' },
+  { id: 'ejercicio-suave', label: 'Ejercicio suave' },
+  { id: 'calor-frio', label: 'Calor o frío local' },
+  { id: 'respiracion', label: 'Respiración o relajación' },
+  { id: 'estiramientos', label: 'Estiramientos' },
+  { id: 'masaje', label: 'Masaje' },
+  { id: 'cuarto-oscuro', label: 'Cuarto oscuro y silencio' },
+  { id: 'hidratacion', label: 'Hidratación' },
+];
+
 export const RELIEF_LEVELS: readonly ReliefLevel[] = ['nada', 'algo', 'mucho'];
 
-export const TRIGGER_CATALOG = [
-  'Estrés',
-  'Mala noche',
-  'Sobreesfuerzo',
-  'Cambio de clima',
-  'Postura prolongada',
-  'Comida o bebida',
-  'Cambio en mi medicación',
-] as const;
+export function otherTrigger(text: string): string {
+  const t = text.trim();
+  return t ? `${OTHER_PREFIX}${t}` : OTHER_ID;
+}
 
-export const RELIEF_CATALOG = [
-  'Tomé mi medicación',
-  'Descansé',
-  'Ejercicio suave',
-  'Calor o frío local',
-  'Respiración o relajación',
-  'Cambié de postura',
-] as const;
+export function triggerLabel(id: string): string {
+  if (id.startsWith(OTHER_PREFIX)) return id.slice(OTHER_PREFIX.length).trim() || 'Otro';
+  return TRIGGER_CATALOG.find((t) => t.id === id)?.label ?? id;
+}
 
-/** Atribuciones históricas (`why`) con emoji o variantes de redacción → etiqueta canónica. */
-const LEGACY_TRIGGERS: Record<string, string> = {
-  estres: 'Estrés',
-  'mala noche': 'Mala noche',
-  sobreesfuerzo: 'Sobreesfuerzo',
-  'cambio de clima': 'Cambio de clima',
-};
+export function reliefLabel(a: ReliefAction): string {
+  if (a.action === OTHER_ID) return a.text?.trim() || 'Otro';
+  return RELIEF_CATALOG.find((r) => r.id === a.action)?.label ?? a.action;
+}
 
-const LEGACY_RELIEFS: Record<string, string> = {
-  'tome mi medicacion': 'Tomé mi medicación',
-  'descanse mejor': 'Descansé',
-  descanse: 'Descansé',
-  'ejercicio suave': 'Ejercicio suave',
-  'calor o frio local': 'Calor o frío local',
-  'calor / frio local': 'Calor o frío local',
-};
-
-/** Minúsculas, sin tildes, sin emoji ni signos: clave estable para comparar textos libres. */
-function legacyKey(raw: string): string {
-  return raw
+function normalizeWhy(raw: string): string {
+  return (raw ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9/ ]+/g, ' ')
+    .replace(/[^a-z0-9ñ ]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+const LEGACY_RULES: { match: RegExp; kind: 'trigger' | 'relief'; id: string }[] = [
+  { match: /^tome mi medicacion/, kind: 'relief', id: 'medicacion' },
+  { match: /^descanse mejor/, kind: 'relief', id: 'descanso' },
+  { match: /^ejercicio suave/, kind: 'relief', id: 'ejercicio-suave' },
+  { match: /^calor (o )?frio/, kind: 'relief', id: 'calor-frio' },
+  { match: /^estres/, kind: 'trigger', id: 'estres' },
+  { match: /^cambio de clima/, kind: 'trigger', id: 'cambio-clima' },
+  { match: /^sobreesfuerzo/, kind: 'trigger', id: 'sobreesfuerzo' },
+  { match: /^mala noche/, kind: 'trigger', id: 'mala-noche' },
+];
+
 export type WhyClassification = {
   triggers: string[];
-  /** Solo el nombre: el registro antiguo no guardó cuánto alivió. */
   reliefs: string[];
-  /** Lo que no es ni gatillante ni alivio (ej. "No lo sé") o no se reconoce. */
   unclassified: string[];
 };
 
-/** Reparte los `why` históricos entre gatillantes y alivios, sin duplicados y en orden. */
+/** @deprecated usar migrateWhy; mantiene forma para tests legacy */
 export function classifyWhy(why: readonly string[] | undefined): WhyClassification {
-  const out: WhyClassification = { triggers: [], reliefs: [], unclassified: [] };
-  for (const raw of why ?? []) {
-    const key = legacyKey(raw);
-    if (!key) continue;
-    const trigger = LEGACY_TRIGGERS[key];
-    const relief = LEGACY_RELIEFS[key];
-    const bucket = trigger ? out.triggers : relief ? out.reliefs : out.unclassified;
-    const label = trigger ?? relief ?? raw.replace(/^[^\p{L}\p{N}]+/u, '').trim();
-    if (!bucket.includes(label)) bucket.push(label);
+  const m = migrateWhy([...(why ?? [])]);
+  const unclassified: string[] = [];
+  for (const w of why ?? []) {
+    const n = normalizeWhy(w);
+    if (!n || LEGACY_RULES.some((r) => r.match.test(n))) continue;
+    if (n === 'no lo se') {
+      unclassified.push('No lo sé');
+      continue;
+    }
+    const known = m.triggers.length + m.reliefActions.length;
+    if (known === 0 && w.trim()) unclassified.push(w.replace(/^[^\p{L}\p{N}]+/u, '').trim());
   }
-  return out;
+  return {
+    triggers: m.triggers,
+    reliefs: m.reliefActions.map((a) => a.action),
+    unclassified,
+  };
+}
+
+export function migrateWhy(why: string[]): {
+  triggers: string[];
+  reliefActions: ReliefAction[];
+  catalogVersion: string;
+} {
+  const triggers: string[] = [];
+  const reliefActions: ReliefAction[] = [];
+  for (const w of why) {
+    const n = normalizeWhy(w);
+    const rule = LEGACY_RULES.find((r) => r.match.test(n));
+    if (!rule) continue;
+    if (rule.kind === 'trigger' && !triggers.includes(rule.id)) triggers.push(rule.id);
+    if (rule.kind === 'relief' && !reliefActions.some((a) => a.action === rule.id)) {
+      reliefActions.push({ action: rule.id, relief: 'algo' });
+    }
+  }
+  return { triggers, reliefActions, catalogVersion: CATALOG_VERSION };
 }
 
 export type Attributions = {
   triggers: string[];
   reliefActions: ReliefAction[];
-  /** Alivios de registros antiguos, sin nivel de alivio. */
   legacyReliefs: string[];
 };
 
-/** Atribuciones de un check-in: campos nuevos si existen; si no, clasifica el `why` antiguo. */
 export function attributionsOf(record: {
   triggers?: string[];
   reliefActions?: ReliefAction[];
@@ -114,52 +141,29 @@ export function attributionsOf(record: {
       legacyReliefs: [],
     };
   }
-  const { triggers, reliefs } = classifyWhy(record.why);
-  return { triggers, reliefActions: [], legacyReliefs: reliefs };
+  const m = migrateWhy(record.why ?? []);
+  return {
+    triggers: m.triggers,
+    reliefActions: m.reliefActions,
+    legacyReliefs: [],
+  };
 }
 
-export type PathologySuggestion = {
-  triggers: string[];
-  reliefs: string[];
-};
+export type PathologySuggestion = { triggers: string[]; reliefs: string[] };
 
 const PATHOLOGY_SUGGESTIONS: { match: RegExp; suggestion: PathologySuggestion }[] = [
-  {
-    match: /fibromialgia/,
-    suggestion: {
-      triggers: ['Mala noche', 'Estrés', 'Cambio de clima'],
-      reliefs: ['Ejercicio suave', 'Calor o frío local', 'Respiración o relajación'],
-    },
-  },
-  {
-    match: /migra[ñn]|cefalea/,
-    suggestion: {
-      triggers: ['Estrés', 'Mala noche', 'Comida o bebida'],
-      reliefs: ['Descansé', 'Respiración o relajación', 'Tomé mi medicación'],
-    },
-  },
-  {
-    match: /lumbalgia|columna|espalda|hernia/,
-    suggestion: {
-      triggers: ['Postura prolongada', 'Sobreesfuerzo', 'Mala noche'],
-      reliefs: ['Calor o frío local', 'Cambié de postura', 'Ejercicio suave'],
-    },
-  },
-  {
-    match: /artritis|reumatoide/,
-    suggestion: {
-      triggers: ['Cambio de clima', 'Sobreesfuerzo', 'Mala noche'],
-      reliefs: ['Calor o frío local', 'Ejercicio suave', 'Tomé mi medicación'],
-    },
-  },
+  { match: /c[áa]ncer|oncol[óo]g|tumor/, suggestion: { triggers: ['estres', 'mala-noche', 'comida'], reliefs: ['medicacion', 'descanso', 'respiracion'] } },
+  { match: /fibromialgia/, suggestion: { triggers: ['estres', 'mala-noche', 'cambio-clima', 'sobreesfuerzo'], reliefs: ['ejercicio-suave', 'calor-frio', 'estiramientos', 'descanso'] } },
+  { match: /migra[ñn]|cefalea/, suggestion: { triggers: ['estres', 'mala-noche', 'pantallas', 'comida', 'ciclo-hormonal'], reliefs: ['cuarto-oscuro', 'hidratacion', 'medicacion', 'respiracion'] } },
+  { match: /lumbalgia|columna|espalda|hernia/, suggestion: { triggers: ['postura', 'sobreesfuerzo', 'frio'], reliefs: ['calor-frio', 'estiramientos', 'ejercicio-suave', 'masaje'] } },
+  { match: /artritis|reumatoide/, suggestion: { triggers: ['frio', 'cambio-clima', 'sobreesfuerzo'], reliefs: ['calor-frio', 'ejercicio-suave', 'medicacion'] } },
 ];
 
 const DEFAULT_SUGGESTION: PathologySuggestion = {
-  triggers: ['Estrés', 'Mala noche', 'Sobreesfuerzo'],
-  reliefs: ['Tomé mi medicación', 'Descansé', 'Ejercicio suave'],
+  triggers: ['estres', 'mala-noche', 'sobreesfuerzo'],
+  reliefs: ['medicacion', 'descanso', 'ejercicio-suave'],
 };
 
-/** Sugerencias por patología (mismo patrón que `guideCardsForPathology`); siempre del catálogo. */
 export function suggestionsForPathology(pathology: string): PathologySuggestion {
   const found = PATHOLOGY_SUGGESTIONS.find((p) => p.match.test(pathology.toLowerCase()));
   return found ? found.suggestion : DEFAULT_SUGGESTION;

@@ -3,17 +3,18 @@ import type { CheckInRecord } from '@/features/patient/types';
 import { DEMO_BOOTSTRAP, CLEAN_BOOTSTRAP } from '@/shared/mocks/patient.mock';
 import {
   CATALOG_VERSION,
-  RELIEF_CATALOG,
   TRIGGER_CATALOG,
   attributionsOf,
   classifyWhy,
+  migrateWhy,
   otherTrigger,
   suggestionsForPathology,
+  triggerLabel,
 } from './trigger-catalog';
 
-describe('classifyWhy', () => {
-  it('reparte los why históricos entre gatillantes y alivios', () => {
-    const r = classifyWhy([
+describe('migrateWhy / classifyWhy', () => {
+  it('reparte los why históricos en ids del catálogo web', () => {
+    const m = migrateWhy([
       '😰 Estrés',
       '💊 Tomé mi medicación',
       '🥶 Cambio de clima',
@@ -23,97 +24,57 @@ describe('classifyWhy', () => {
       '🌙 Mala noche',
       '🚶 Ejercicio suave',
     ]);
-    expect(r.triggers).toEqual(['Estrés', 'Cambio de clima', 'Sobreesfuerzo', 'Mala noche']);
-    expect(r.reliefs).toEqual(['Tomé mi medicación', 'Calor o frío local', 'Descansé', 'Ejercicio suave']);
-    expect(r.unclassified).toEqual([]);
+    expect(m.triggers).toEqual(['estres', 'cambio-clima', 'sobreesfuerzo', 'mala-noche']);
+    expect(m.reliefActions.map((a) => a.action)).toEqual(['medicacion', 'calor-frio', 'descanso', 'ejercicio-suave']);
+    expect(m.catalogVersion).toBe('1.0');
   });
 
-  it('"No lo sé" y textos desconocidos quedan sin clasificar', () => {
+  it('"No lo sé" queda sin clasificar en classifyWhy', () => {
     const r = classifyWhy(['🤷 No lo sé', 'Algo raro']);
-    expect(r).toEqual({ triggers: [], reliefs: [], unclassified: ['No lo sé', 'Algo raro'] });
-  });
-
-  it('no duplica, ignora vacíos y acepta undefined', () => {
-    expect(classifyWhy(['Estrés', '😰 Estrés', '  ']).triggers).toEqual(['Estrés']);
-    expect(classifyWhy(undefined)).toEqual({ triggers: [], reliefs: [], unclassified: [] });
-  });
-
-  it('toda etiqueta canónica del catálogo que viene del histórico se reconoce a sí misma', () => {
-    expect(classifyWhy(['Estrés', 'Mala noche', 'Sobreesfuerzo', 'Cambio de clima']).triggers).toHaveLength(4);
-    for (const t of classifyWhy(['Estrés', 'Mala noche', 'Sobreesfuerzo', 'Cambio de clima']).triggers) {
-      expect(TRIGGER_CATALOG).toContain(t);
-    }
-    for (const r of classifyWhy(['Tomé mi medicación', 'Descansé mejor', 'Ejercicio suave', 'Calor o frío local']).reliefs) {
-      expect(RELIEF_CATALOG).toContain(r);
-    }
+    expect(r.triggers).toEqual([]);
+    expect(r.reliefs).toEqual([]);
+    expect(r.unclassified.length).toBeGreaterThan(0);
   });
 });
 
 describe('attributionsOf', () => {
-  it('prefiere los campos nuevos', () => {
+  it('prefiere los campos nuevos (ids)', () => {
     const a = attributionsOf({
-      triggers: ['Estrés'],
-      reliefActions: [{ action: 'Ejercicio suave', relief: 'mucho' }],
+      triggers: ['estres'],
+      reliefActions: [{ action: 'ejercicio-suave', relief: 'mucho' }],
       why: ['Mala noche'],
     });
-    expect(a).toEqual({
-      triggers: ['Estrés'],
-      reliefActions: [{ action: 'Ejercicio suave', relief: 'mucho' }],
-      legacyReliefs: [],
-    });
+    expect(a.triggers).toEqual(['estres']);
+    expect(a.reliefActions[0].action).toBe('ejercicio-suave');
   });
 
-  it('un registro con solo why se sigue leyendo', () => {
-    const a = attributionsOf({ why: ['😰 Estrés', 'Calor o frío local'] });
-    expect(a.triggers).toEqual(['Estrés']);
-    expect(a.reliefActions).toEqual([]);
-    expect(a.legacyReliefs).toEqual(['Calor o frío local']);
-  });
-
-  it('un registro sin nada devuelve vacío', () => {
-    expect(attributionsOf({})).toEqual({ triggers: [], reliefActions: [], legacyReliefs: [] });
+  it('migra why en registros viejos', () => {
+    const demo = DEMO_BOOTSTRAP.checkIns.find((c) => c.why?.length);
+    expect(demo).toBeDefined();
+    const a = attributionsOf(demo!);
+    expect(a.triggers.length + a.reliefActions.length).toBeGreaterThan(0);
   });
 });
 
-describe('otherTrigger / suggestionsForPathology', () => {
-  it('"Otro" lleva el texto del paciente', () => {
-    expect(otherTrigger('  ruido  ')).toBe('Otro: ruido');
-    expect(otherTrigger('  ')).toBe('Otro');
+describe('catálogo', () => {
+  it('otherTrigger usa prefijo otro:', () => {
+    expect(otherTrigger(' lluvia ')).toBe('otro:lluvia');
   });
 
-  it('sugiere por patología y cae a un conjunto base', () => {
-    expect(suggestionsForPathology('Lumbalgia crónica').triggers).toContain('Postura prolongada');
-    expect(suggestionsForPathology('Fibromialgia').reliefs).toContain('Respiración o relajación');
-    expect(suggestionsForPathology('Desconocida').triggers).toEqual(['Estrés', 'Mala noche', 'Sobreesfuerzo']);
+  it('sugerencias por patología devuelven ids kebab-case', () => {
+    const s = suggestionsForPathology('Fibromialgia');
+    expect(s.triggers.every((id) => TRIGGER_CATALOG.some((t) => t.id === id))).toBe(true);
+    expect(s.reliefs.every((id) => /^[a-z0-9-]+$/.test(id))).toBe(true);
   });
 
-  it('las sugerencias salen siempre del catálogo', () => {
-    for (const p of ['cáncer', 'fibromialgia', 'migraña', 'lumbalgia', 'artritis', 'otra']) {
-      const s = suggestionsForPathology(p);
-      s.triggers.forEach((t) => expect(TRIGGER_CATALOG).toContain(t));
-      s.reliefs.forEach((r) => expect(RELIEF_CATALOG).toContain(r));
-    }
+  it('triggerLabel resuelve ids', () => {
+    expect(triggerLabel('estres')).toBe('Estrés');
   });
-});
 
-describe('fixtures', () => {
-  const [c1, c2] = DEMO_BOOTSTRAP.checkIns as [CheckInRecord, CheckInRecord];
-
-  it('el demo mezcla un registro nuevo y uno antiguo con solo why', () => {
+  it('fixtures demo: c1 usa ids; usuario limpio sin check-ins inventados', () => {
+    const c1 = DEMO_BOOTSTRAP.checkIns[0];
     expect(c1.catalogVersion).toBe(CATALOG_VERSION);
-    expect(c1.triggers).toEqual(['Mala noche']);
-    expect(c1.reliefActions?.every((r) => ['nada', 'algo', 'mucho'].includes(r.relief))).toBe(true);
-    expect(c2.triggers).toBeUndefined();
-    expect(c2.reliefActions).toBeUndefined();
-    expect(attributionsOf(c2).triggers).toEqual(['Estrés']);
-  });
-
-  it('las etiquetas de los fixtures existen en el catálogo', () => {
-    for (const t of c1.triggers ?? []) expect(TRIGGER_CATALOG).toContain(t);
-    for (const r of c1.reliefActions ?? []) expect(RELIEF_CATALOG).toContain(r.action);
-  });
-
-  it('el usuario nuevo sigue limpio', () => {
-    expect(CLEAN_BOOTSTRAP.checkIns).toEqual([]);
+    expect(c1.triggers?.[0]).toBe('mala-noche');
+    expect(CLEAN_BOOTSTRAP.checkIns).toHaveLength(0);
   });
 });

@@ -71,10 +71,10 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
         { medId: 'm1', choice: 'indicated' },
         { medId: 'm2', choice: 'indicated' },
       ],
-      triggers: ['Mala noche'],
+      triggers: ['mala-noche'],
       reliefActions: [
-        { action: 'Calor o frío local', relief: 'mucho' },
-        { action: 'Ejercicio suave', relief: 'algo' },
+        { action: 'calor-frio', relief: 'mucho' },
+        { action: 'ejercicio-suave', relief: 'algo' },
       ],
       catalogVersion: CATALOG_VERSION,
     },

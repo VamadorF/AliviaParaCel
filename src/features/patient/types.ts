@@ -38,7 +38,7 @@ export type CheckInRecord = {
   doses: { medId: string; choice: DoseChoice }[];
   /** Atribuciones antiguas en texto libre. Los registros viejos solo traen esto. */
   why?: string[];
-  /** DIF-01 · Gatillantes: etiquetas del catálogo o `Otro: texto` (ver `otherTrigger`). */
+  /** DIF-01 · Gatillantes: ids del catálogo (`estres`, …) o `otro:<texto>`. */
   triggers?: string[];
   /** DIF-01 · Acciones de alivio con el alivio que reportó el paciente. */
   reliefActions?: ReliefAction[];
