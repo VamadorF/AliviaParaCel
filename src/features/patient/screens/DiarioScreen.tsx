@@ -135,11 +135,25 @@ export function DiarioScreen() {
           testID="instruction-card"
           style={[styles.block, { backgroundColor: palette.accentSoft, borderColor: '#dde5f6' }]}
         >
-          <Text style={[styles.kicker, { color: palette.accent }]}>INSTRUCCIÓN DE TU EQUIPO</Text>
-          <Text style={[styles.cardTitle, { color: palette.text }]}>{data.instruction.text}</Text>
+          <Text
+            accessibilityRole="header"
+            accessibilityLabel="Instrucción de tu equipo"
+            style={[styles.kicker, { color: palette.accent }]}
+          >
+            INSTRUCCIÓN DE TU EQUIPO
+          </Text>
+          <Text
+            accessibilityRole="text"
+            accessibilityLabel={data.instruction.text}
+            style={[styles.cardTitle, { color: palette.text }]}
+          >
+            {data.instruction.text}
+          </Text>
           {instructionRead ? (
             <Text
               testID="instruction-read"
+              accessibilityRole="text"
+              accessibilityLiveRegion="polite"
               style={{ color: palette.primary, fontWeight: '800', fontSize: 13, marginTop: 10 }}
             >
               {formatInstructionRead(instructionRead)}
@@ -148,6 +162,7 @@ export function DiarioScreen() {
             <View style={{ marginTop: 12 }}>
               <Button
                 label="Entendido"
+                accessibilityLabel="Entendido, instrucción de tu equipo"
                 onPress={acknowledgeInstruction}
                 disabled={isAcknowledgingInstruction}
                 testID="instruction-ack"

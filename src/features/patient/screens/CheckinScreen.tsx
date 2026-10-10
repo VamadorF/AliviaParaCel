@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { Button } from '@/shared/components/Button';
 import { Chip } from '@/shared/components/Chip';
@@ -46,7 +46,13 @@ import { painColor, painLabel } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 const ZONES = ['Cabeza', 'Cuello', 'Hombro', 'Lumbar', 'Cadera', 'Rodilla', 'Otro'];
-const SLEEP = ['< 5 h', '5–6 h', '6–7 h', '7+ h'];
+const SLEEP = ['< 5 h', '5–6 h', '6–7 h', '7+ h'] as const;
+const SLEEP_NAME: Record<(typeof SLEEP)[number], string> = {
+  '< 5 h': 'Sueño: menos de 5 horas',
+  '5–6 h': 'Sueño: 5 a 6 horas',
+  '6–7 h': 'Sueño: 6 a 7 horas',
+  '7+ h': 'Sueño: 7 horas o más',
+};
 const APPETITES: Appetite[] = ['normal', 'reducido', 'nulo'];
 
 export function CheckinScreen() {
@@ -71,8 +77,14 @@ export function CheckinScreen() {
   );
   const showAttribution = showReliefTriggerSteps({ pain: draft.pain, previousPain, firstOfDay });
   const flow = stepFlow(showAttribution);
+  const stepNumber = flow.indexOf(step) + 1;
+  const stepTotal = flow.length;
+  const stepAnnouncement = `Paso ${stepNumber} de ${stepTotal}`;
   const reliefOpts = useMemo(() => reliefOptions(), []);
   const triggerOpts = useMemo(() => triggerOptions(), []);
+  useEffect(() => {
+    AccessibilityInfo.announceForAccessibility(stepAnnouncement);
+  }, [stepAnnouncement]);
 
   const goNext = () => {
     if (blockers.length > 0) return;
@@ -112,9 +124,10 @@ export function CheckinScreen() {
     >
       <Text
         style={[styles.step, { color: palette.textMuted }]}
-        accessibilityLiveRegion="polite"
+        accessibilityRole="text"
+        accessibilityLabel={stepAnnouncement}
       >
-        Paso {flow.indexOf(step) + 1} de {flow.length}
+        {stepAnnouncement}
       </Text>
       <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
         Check-in diario
@@ -144,11 +157,13 @@ export function CheckinScreen() {
             <Chip
               label="No"
               selected={draft.emergency === false}
+              accessibilityLabel="Urgencias: No"
               onPress={() => update({ emergency: false, emergencyReason: '', emergencyDetail: '' })}
             />
             <Chip
               label="Sí"
               selected={draft.emergency === true}
+              accessibilityLabel="Urgencias: Sí"
               onPress={() => update({ emergency: true })}
             />
           </View>
@@ -179,11 +194,13 @@ export function CheckinScreen() {
             <Chip
               label="Yo"
               selected={draft.registrant === 'self'}
+              accessibilityLabel="Quién registra: Yo"
               onPress={() => update({ registrant: 'self' })}
             />
             <Chip
               label="Soy cuidador"
               selected={draft.registrant === 'caregiver'}
+              accessibilityLabel="Quién registra: Soy cuidador"
               onPress={() => update({ registrant: 'caregiver' })}
             />
           </View>
@@ -231,6 +248,7 @@ export function CheckinScreen() {
                   key={face.num}
                   accessibilityRole="button"
                   accessibilityLabel={`${face.label}, ${face.num}`}
+                  accessibilityState={{ selected }}
                   onPress={() => update({ pain: face.num })}
                   style={[
                     styles.faceBtn,
@@ -251,6 +269,7 @@ export function CheckinScreen() {
                 key={n}
                 label={String(n)}
                 selected={draft.pain === n}
+                accessibilityLabel={`Dolor ${n}, ${painLabel(n)}`}
                 onPress={() => update({ pain: n })}
               />
             ))}
@@ -314,6 +333,7 @@ export function CheckinScreen() {
                 key={s}
                 label={s}
                 selected={draft.sleep === s}
+                accessibilityLabel={SLEEP_NAME[s]}
                 onPress={() => update({ sleep: s })}
               />
             ))}

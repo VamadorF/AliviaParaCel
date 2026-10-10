@@ -7,16 +7,18 @@ type ChipProps = {
   selected?: boolean;
   onPress: () => void;
   accessibilityHint?: string;
+  /** Nombre del lector cuando el texto visible no alcanza (un "Sí" o un "< 5 h"). */
+  accessibilityLabel?: string;
 };
 
-export function Chip({ label, selected, onPress, accessibilityHint }: ChipProps) {
+export function Chip({ label, selected, onPress, accessibilityHint, accessibilityLabel }: ChipProps) {
   const { palette } = useTheme();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       style={[
         styles.chip,
