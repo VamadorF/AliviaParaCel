@@ -12,12 +12,6 @@ jobs:
       CI: true
     steps:
       - uses: actions/checkout@v4
-      # sync-core --check compara src/shared/core con AlivIACare (misma rama de integración web).
-      - uses: actions/checkout@v4
-        with:
-          repository: jsfernandez/AlivIACare
-          ref: feat/plan-frontend-mock
-          path: AlivIACare
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
