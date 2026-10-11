@@ -18,12 +18,12 @@ export type ReliefLevel = 'nada' | 'algo' | 'mucho';
 
 export interface ReliefAction { action: string; relief: ReliefLevel; text?: string }
 
-/** Gatillantes y alivios del check-in (DIF-01). Los registros antiguos solo traen `why`. */
-export interface CheckInExtensions {
-  triggers?: string[];
-  reliefActions?: ReliefAction[];
-  /** versión del catálogo con que se clasificó el registro */
-  catalogVersion?: string;
+/** Zona del mapa corporal (PAC-16). */
+export type PainBodySite = {
+  regionId: string;
+  label: string;
+  view: 'frontal' | 'posterior';
+  side: 'izquierdo' | 'derecho' | 'bilateral';
 }
 
 export interface CheckInRow {

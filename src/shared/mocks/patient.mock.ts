@@ -24,6 +24,7 @@ export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
     instruction: base.instruction
       ? { ...base.instruction, id: base.instruction.id > 0 ? base.instruction.id : 1 }
       : null,
+    instructionHistory: base.instructionHistory?.map((row) => ({ ...row })),
     instructionAcks: base.instructionAcks?.map((ack) => ({ ...ack })),
     consent: base.consent ? { ...base.consent } : undefined,
     consentHistory: base.consentHistory ? [...base.consentHistory] : undefined,
@@ -118,10 +119,17 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
     status: 'Pendiente',
   },
   instruction: {
-    id: 1,
+    id: 2,
     text: 'Registra el dolor antes de tomar rescate. Si supera 7 por dos días, escríbenos por AlivIA.',
     date: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
+  instructionHistory: [
+    {
+      id: 1,
+      text: 'Mantén la pauta de gabapentina en la noche. No dupliques dosis de rescate.',
+      date: new Date(Date.now() - 20 * 86400000).toISOString(),
+    },
+  ],
   messages: [
     {
       id: 'msg1',
@@ -150,6 +158,7 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
       author: 'Ana R.',
       excerpt: '¿Alguien usa compresas térmicas en la mañana? Me ayudó a bajar la rigidez.',
       at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      topicTag: 'Fibromialgia',
     },
     {
       id: 'p2',

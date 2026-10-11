@@ -4,9 +4,10 @@ export type AuthStackParamList = {
 };
 
 export type DiarioStackParamList = {
-  DiarioHome: undefined;
+  DiarioHome: { appointmentId?: string } | undefined;
   Checkin: undefined;
   QuickCheckin: undefined;
+  Progreso: undefined;
 };
 
 export type MainTabParamList = {

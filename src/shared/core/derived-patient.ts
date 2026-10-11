@@ -68,7 +68,7 @@ export function patientPainSeries(checkInHistory: CheckInRow[], rut: string): Pa
     });
 }
 
-export function patientCheckIns(checkInHistory: CheckInRow[], rut: string): CheckInRow[] {
+export function patientCheckIns(checkInHistory: readonly CheckInRow[], rut: string): CheckInRow[] {
   const me = normalizeRut(rut);
   return checkInHistory.filter((c) => normalizeRut(c.patientRut) === me).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

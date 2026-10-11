@@ -1,12 +1,17 @@
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
 import { matchesCrisisSignal } from '@/features/patient/community/crisis-signals';
+import { communityDisplayName, sanitizeAlias } from '@/features/patient/community/alias';
 import { moderate } from '@/features/patient/community/moderate';
+import { pathologyTagOf } from '@/features/patient/community/topic-tag';
 import type { ForumPost, PatientBootstrap } from '@/features/patient/types';
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 
 export type CommunityPostInput = {
   id: string;
   author: string;
+  authorRut?: string;
+  displayAlias?: string;
+  topicTag?: string;
   text: string;
   at: string;
   parentId: string | null;
@@ -56,12 +61,18 @@ export function appendCommunityPost(
     if (!parent) return { ok: false, reason: 'missing-topic' };
   }
   const text = input.text.trim();
+  const alias = sanitizeAlias(input.displayAlias ?? '');
   const post: ForumPost = {
     id: input.id,
-    author: input.author.trim() || 'Paciente',
+    author: communityDisplayName({ author: input.author.trim() || 'Paciente', displayAlias: alias }),
     excerpt: text,
     at: input.at,
     parentId: input.parentId,
+    ...(input.authorRut ? { authorRut: input.authorRut } : {}),
+    ...(alias ? { displayAlias: alias } : {}),
+    ...(!input.parentId
+      ? { topicTag: input.topicTag?.trim() || pathologyTagOf(data.pathology) }
+      : {}),
     ...(matchesCrisisSignal(text) ? { review: 'en_revision' as const } : {}),
   };
   return { ok: true, data: { ...data, posts: [post, ...data.posts] } };

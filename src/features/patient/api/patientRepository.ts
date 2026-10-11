@@ -1,4 +1,5 @@
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
+import type { AttendanceInput } from '@/features/patient/utils/appointment-attendance';
 import type {
   CheckInRecord,
   ConsentAction,
@@ -43,6 +44,12 @@ export type PatientRepository = {
     profile: PatientProfileKind,
     input: PreConsultInput,
     at: string,
+  ) => Promise<PatientBootstrap>;
+  /** PAC-11 · Confirmación o reprogramación de la consulta vigente. */
+  submitAppointmentAttendance: (
+    userId: string,
+    profile: PatientProfileKind,
+    input: AttendanceInput,
   ) => Promise<PatientBootstrap>;
   resetDemoData: (
     userId: string,

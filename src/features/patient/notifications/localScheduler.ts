@@ -69,7 +69,11 @@ async function syncBody(
   for (const item of plan) {
     await Notifications.scheduleNotificationAsync({
       identifier: item.id,
-      content: { title: item.title, body: item.body },
+      content: {
+        title: item.title,
+        body: item.body,
+        ...(item.url ? { data: { url: item.url } } : {}),
+      },
       trigger:
         item.trigger.type === 'daily'
           ? {

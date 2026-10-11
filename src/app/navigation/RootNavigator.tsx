@@ -4,6 +4,7 @@ import { AuthNavigator } from '@/app/navigation/AuthNavigator';
 import { MainTabs } from '@/app/navigation/MainTabs';
 import { PatientSessionProvider } from '@/features/patient/context/PatientSessionContext';
 import { ReminderProvider } from '@/features/patient/notifications/ReminderProvider';
+import { AppLockGate } from '@/features/security/AppLockGate';
 import type { RootStackParamList } from '@/shared/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -11,9 +12,11 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 function MainShell() {
   return (
     <PatientSessionProvider>
-      <ReminderProvider>
-        <MainTabs />
-      </ReminderProvider>
+      <AppLockGate>
+        <ReminderProvider>
+          <MainTabs />
+        </ReminderProvider>
+      </AppLockGate>
     </PatientSessionProvider>
   );
 }

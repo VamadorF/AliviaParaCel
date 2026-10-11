@@ -15,6 +15,11 @@ import {
   persistCommunityPost,
   type ForumRejectReason,
 } from '@/features/patient/community/forum';
+import { sanitizeAlias } from '@/features/patient/community/alias';
+import {
+  filterThreadsByPathology,
+  pathologyTagOf,
+} from '@/features/patient/community/topic-tag';
 import {
   authorSeesHidden,
   persistCommunityReport,
@@ -28,6 +33,7 @@ import type { ForumPost } from '@/features/patient/types';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
+import { Chip } from '@/shared/components/Chip';
 import { Screen } from '@/shared/components/Screen';
 import { IconTile } from '@/shared/icons/AppIcon';
 import { useTheme } from '@/shared/theme/ThemeContext';
@@ -67,12 +73,19 @@ export function ComunidadScreen() {
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
+  const [useAlias, setUseAlias] = useState(false);
+  const [aliasDraft, setAliasDraft] = useState('');
+  const [showAllTopics, setShowAllTopics] = useState(false);
 
   const viewer = user ? communityAuthor(user.name) : '';
   const crisisHelp = data.posts.some(
     (post) => post.review === 'en_revision' && post.author === viewer,
   );
-  const threads = useMemo(() => shownThreads(data.posts, viewer), [data.posts, viewer]);
+  const threads = useMemo(() => {
+    const base = shownThreads(data.posts, viewer);
+    if (showAllTopics) return base;
+    return filterThreadsByPathology(base, data.pathology);
+  }, [data.posts, viewer, showAllTopics, data.pathology]);
   const opened = activeId
     ? data.posts.find((post) => post.id === activeId && !post.parentId)
     : undefined;
@@ -101,6 +114,9 @@ export function ComunidadScreen() {
       const result = await persistCommunityPost(patientRepository, user.id, user.profile, {
         id: newCommunityPostId(),
         author: communityAuthor(user.name),
+        authorRut: user.rut,
+        displayAlias: useAlias && !parentId ? sanitizeAlias(aliasDraft) : undefined,
+        topicTag: !parentId ? pathologyTagOf(data.pathology) : undefined,
         text,
         at: new Date().toISOString(),
         parentId,
@@ -269,6 +285,45 @@ export function ComunidadScreen() {
         </View>
       ) : (
         <View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            <Chip
+              label={
+                showAllTopics
+                  ? 'Mostrando todos los temas'
+                  : `Filtrado: ${pathologyTagOf(data.pathology)}`
+              }
+              selected={!showAllTopics}
+              onPress={() => setShowAllTopics((v) => !v)}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: useAlias }}
+            onPress={() => setUseAlias((v) => !v)}
+            style={{ marginBottom: 8 }}
+          >
+            <Text style={{ color: palette.text, fontWeight: '700' }}>
+              Publicar con seudónimo {useAlias ? '(activado)' : '(desactivado)'}
+            </Text>
+          </Pressable>
+          {useAlias ? (
+            <TextInput
+              value={aliasDraft}
+              onChangeText={setAliasDraft}
+              placeholder="Tu alias visible"
+              placeholderTextColor={palette.textMuted}
+              style={{
+                borderWidth: 1,
+                borderColor: palette.border,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 10,
+                color: palette.text,
+                backgroundColor: palette.surface,
+                minHeight: 48,
+              }}
+            />
+          ) : null}
           <Composer
             value={topicDraft}
             onChangeText={setTopicDraft}
@@ -290,6 +345,11 @@ export function ComunidadScreen() {
                   onPress={() => openThread(post.id)}
                 >
                   <Text style={{ fontWeight: '800', color: palette.text }}>{post.author}</Text>
+                  {post.topicTag ? (
+                    <Text style={{ color: palette.textAccent, fontSize: 11, fontWeight: '800', marginTop: 4 }}>
+                      {post.topicTag}
+                    </Text>
+                  ) : null}
                   <Text
                     numberOfLines={4}
                     style={{ color: palette.text, marginTop: 8, lineHeight: 22 }}

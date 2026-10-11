@@ -17,8 +17,10 @@ import {
   useAcknowledgeInstructionMutation,
   usePatientBootstrapQuery,
   useSetConsentMutation,
+  useSubmitAppointmentAttendanceMutation,
   useSubmitPreConsultMutation,
 } from '@/features/patient/hooks/usePatientBootstrap';
+import type { AttendanceInput } from '@/features/patient/utils/appointment-attendance';
 import {
   flushOutbox,
   loadOutbox,
@@ -56,6 +58,9 @@ type PatientSessionValue = {
   /** PAC-10 · Prepara la consulta vigente. Si ya hay respuesta, no duplica. */
   submitPreConsult: (input: PreConsultInput) => void;
   isSubmittingPreConsult: boolean;
+  /** PAC-11 · Confirmación o reprogramación de la consulta vigente. */
+  submitAppointmentAttendance: (input: AttendanceInput) => void;
+  isSubmittingAppointmentAttendance: boolean;
   lastSavedMessage: string | null;
   clearSavedMessage: () => void;
 };
@@ -86,6 +91,7 @@ export function PatientSessionProvider({
   const consentMutation = useSetConsentMutation();
   const ackMutation = useAcknowledgeInstructionMutation();
   const preConsultMutation = useSubmitPreConsultMutation();
+  const attendanceMutation = useSubmitAppointmentAttendanceMutation();
   const [lastSavedMessage, setLastSavedMessage] = useState<string | null>(null);
   const [outbox, setOutbox] = useState<{ userId: string; items: OutboxItem[] }>({
     userId: '',
@@ -210,6 +216,14 @@ export function PatientSessionProvider({
     [preConsultMutation],
   );
 
+  const submitAppointmentAttendance = useCallback(
+    (input: AttendanceInput) => {
+      if (attendanceMutation.isPending) return;
+      attendanceMutation.mutate(input);
+    },
+    [attendanceMutation],
+  );
+
   const clearSavedMessage = useCallback(() => setLastSavedMessage(null), []);
 
   const value = useMemo(
@@ -226,6 +240,8 @@ export function PatientSessionProvider({
       isAcknowledgingInstruction: ackMutation.isPending,
       submitPreConsult,
       isSubmittingPreConsult: preConsultMutation.isPending,
+      submitAppointmentAttendance,
+      isSubmittingAppointmentAttendance: attendanceMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     }),
@@ -242,6 +258,8 @@ export function PatientSessionProvider({
       ackMutation.isPending,
       submitPreConsult,
       preConsultMutation.isPending,
+      submitAppointmentAttendance,
+      attendanceMutation.isPending,
       lastSavedMessage,
       clearSavedMessage,
     ],

@@ -29,7 +29,8 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "REEMPLAZA_CON_TU_PROJECT_ID"
+        "projectId": "REEMPLAZA_CON_TU_PROJECT_ID",
+        "_comment": "projectId pendiente: crear cuenta EAS y reemplazar antes de builds production"
       }
     },
     "plugins": [
@@ -43,6 +44,8 @@
         }
       ],
       "expo-secure-store",
+      "expo-local-authentication",
+      "expo-screen-capture",
       [
         "expo-image-picker",
         {

@@ -1,19 +1,11 @@
 import React, { useId, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Polygon, Polyline, Stop } from 'react-native-svg';
+import { dailyPainSeries } from '@/features/patient/utils/pain-series';
+import { progressChartMessage } from '@/features/patient/utils/progress';
 import { painColor } from '@/features/patient/utils/pain';
 
-export function dailyPainSeries(checkIns: { date: string; pain: number }[]): number[] {
-  const byDay = new Map<string, number[]>();
-  for (const entry of checkIns) {
-    const list = byDay.get(entry.date) ?? [];
-    list.push(entry.pain);
-    byDay.set(entry.date, list);
-  }
-  return [...byDay.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, pains]) => pains.reduce((sum, n) => sum + n, 0) / pains.length);
-}
+export { dailyPainSeries };
 
 const LEGEND = [
   { color: '#256e4d', label: 'Controlado (0–3)' },
@@ -39,9 +31,12 @@ export function PainChart({
   const gradId = useId().replace(/:/g, '');
 
   if (values.length < 2) {
+    const message =
+      progressChartMessage(values.length) ??
+      'Tu curva de evolución aparecerá cuando acumules registros diarios.';
     return (
       <Text style={{ color: labelColor, fontSize: 13, lineHeight: 20, textAlign: 'center' }}>
-        Tu curva de evolución aparecerá cuando acumules registros diarios.
+        {message}
       </Text>
     );
   }
