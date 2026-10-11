@@ -34,6 +34,11 @@ import {
   toggleTrigger,
 } from '@/features/patient/utils/checkin';
 import {
+  PAIN_DESCRIPTOR_IDS,
+  PAIN_DESCRIPTOR_LABEL,
+  togglePainDescriptor,
+} from '@/features/patient/utils/pain-descriptors';
+import {
   attributionContext,
   reliefOptions,
   showReliefTriggerSteps,
@@ -382,6 +387,20 @@ export function CheckinScreen() {
             value={draft.painSites}
             onChange={(painSites) => update({ painSites, zones: [] })}
           />
+          <Text style={[styles.label, { marginTop: 12 }]}>¿Cómo se siente el dolor? (opcional)</Text>
+          <View style={styles.rowWrap}>
+            {PAIN_DESCRIPTOR_IDS.map((id) => (
+              <Chip
+                key={id}
+                label={PAIN_DESCRIPTOR_LABEL[id]}
+                selected={draft.painDescriptorSel.includes(id)}
+                onPress={() =>
+                  update({ painDescriptorSel: togglePainDescriptor(draft.painDescriptorSel, id) })
+                }
+                testID={`pain-descriptor-${id}`}
+              />
+            ))}
+          </View>
           <NoteToggle
             section="zonas"
             prompt="Cuéntanos más: cómo es el dolor (punzante, quemante…), cuándo empezó, qué lo alivia o empeora."

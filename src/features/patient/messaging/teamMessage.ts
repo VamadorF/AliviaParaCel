@@ -6,6 +6,8 @@ export type TeamMessageInput = {
   id: string;
   body: string;
   at: string;
+  /** PAC-12 · Médico del equipo destinatario. */
+  teamDoctorId?: string;
 };
 
 export type TeamMessageWrite =
@@ -34,6 +36,7 @@ export function appendTeamMessage(
     body,
     at: input.at,
     channel: 'team',
+    ...(input.teamDoctorId ? { teamDoctorId: input.teamDoctorId } : {}),
   };
   return { ok: true, data: { ...data, messages: [...data.messages, message] } };
 }

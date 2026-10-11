@@ -8,6 +8,7 @@ export interface PainSeriesPoint {
   caregivers: { name: string; relation: string }[];
   /** Resumen GI del día (último registro con datos digestivos). */
   giSummary: string | null;
+  painDescriptors?: string[];
 }
 
 export function lastCaregiver(checkInHistory: CheckInRow[], patientRut: string): { name: string; relation: string } | null {
@@ -64,6 +65,7 @@ export function patientPainSeries(checkInHistory: CheckInRow[], rut: string): Pa
         date: day, offset, count: entries.length,
         pain: Number((entries.reduce((a, e) => a + e.pain, 0) / entries.length).toFixed(1)),
         zones: last.zones, mood: last.mood, sleep: last.sleep, caregivers: uniq, giSummary,
+        painDescriptors: last.painDescriptors,
       };
     });
 }

@@ -45,7 +45,11 @@ type PatientSessionValue = {
   isLoading: boolean;
   saveCheckIn: (record: CheckInRecord) => void;
   /** Encola el mensaje al equipo si no hay red. Un texto vacío no se envía. */
-  sendTeamMessage: (body: string, at: string) => Promise<'pending' | 'sent' | 'empty'>;
+  sendTeamMessage: (
+    body: string,
+    at: string,
+    teamDoctorId?: string,
+  ) => Promise<'pending' | 'sent' | 'empty'>;
   /** MOB-06 · Estado vigente del consentimiento (persistido) e historial. */
   consent: ConsentView;
   consentHistory: ConsentEvent[];
@@ -177,7 +181,7 @@ export function PatientSessionProvider({
   );
 
   const sendTeamMessage = useCallback(
-    async (body: string, at: string) => {
+    async (body: string, at: string, teamDoctorId?: string) => {
       const trimmed = body.trim();
       if (!trimmed || !user) return 'empty' as const;
       const result = await submitOutbox(asyncStoragePort, patientRepository, online, {
@@ -187,6 +191,7 @@ export function PatientSessionProvider({
         userId: user.id,
         profile: user.profile,
         body: trimmed,
+        ...(teamDoctorId ? { teamDoctorId } : {}),
       });
       if (result.status === 'sent' && canWriteUserCache(user.id)) {
         queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), result.data);

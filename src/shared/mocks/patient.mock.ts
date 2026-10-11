@@ -169,6 +169,8 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
   ],
   messagingEnabled: true,
   doctorLinked: true,
+  commune: 'Santiago',
+  teamMessagingDoctorId: '12345678-5',
   // Red de Constanza en los fixtures web: ALIVIAMVP (teléfono de esa clínica).
   clinic: {
     name: 'ALIVIAMVP',
@@ -181,14 +183,25 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
   phone: '',
   photoUri: null,
   team: [
-    { id: '12345678-5', name: 'Dr. Jesús Fernández', specialty: 'Especialista en Dolor Crónico' },
-    { id: '13456789-9', name: 'Dra. Constanza Elizondo', specialty: 'Reumatología' },
+    {
+      id: '12345678-5',
+      name: 'Dr. Jesús Fernández',
+      specialty: 'Especialista en Dolor Crónico',
+      messagingEnabled: true,
+    },
+    {
+      id: '13456789-9',
+      name: 'Dra. Constanza Elizondo',
+      specialty: 'Reumatología',
+      messagingEnabled: false,
+    },
     {
       id: '20333444-3',
       name: 'Dra. Invitada Soto',
       specialty: 'Neurología',
       expiresAt: new Date(Date.now() + 18 * 86400000).toISOString(),
       newlyAccepted: true,
+      messagingEnabled: false,
     },
   ],
   // La web siembra la bandeja vacía. Esta solicitud deja aprobar o rechazar en el mock.

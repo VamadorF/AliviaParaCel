@@ -14,7 +14,7 @@ export type OutboxItem = {
   profile: PatientProfileKind;
 } & (
   | { kind: 'checkIn'; record: CheckInRecord }
-  | { kind: 'teamMessage'; body: string }
+  | { kind: 'teamMessage'; body: string; teamDoctorId?: string }
 );
 
 type OutboxRepository = Pick<PatientRepository, 'loadBootstrap' | 'saveBootstrap' | 'appendCheckIn'>;
@@ -40,7 +40,12 @@ function isOutboxItem(value: unknown): value is OutboxItem {
     return false;
   }
   if (item.profile !== 'demo' && item.profile !== 'clean') return false;
-  if (item.kind === 'teamMessage') return typeof item.body === 'string';
+  if (item.kind === 'teamMessage') {
+    return (
+      typeof item.body === 'string' &&
+      (item.teamDoctorId === undefined || typeof item.teamDoctorId === 'string')
+    );
+  }
   if (item.kind === 'checkIn') {
     return Boolean(item.record && typeof item.record.id === 'string' && typeof item.record.date === 'string');
   }
@@ -88,6 +93,7 @@ async function applyOutboxItem(repository: OutboxRepository, item: OutboxItem): 
       id: item.clientRequestId,
       body: item.body,
       at: item.capturedAt,
+      teamDoctorId: item.teamDoctorId,
     });
     if (!result.ok) return repository.loadBootstrap(item.userId, item.profile);
     return result.data;
@@ -168,6 +174,7 @@ export function mergePending(data: PatientBootstrap, queue: readonly OutboxItem[
       body: item.body,
       at: item.capturedAt,
       channel: 'team',
+      ...(item.teamDoctorId ? { teamDoctorId: item.teamDoctorId } : {}),
       syncStatus: 'pending',
     });
   }

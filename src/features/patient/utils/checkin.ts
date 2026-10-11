@@ -19,6 +19,7 @@ import {
   triggerLabel,
 } from '@/shared/data/trigger-catalog';
 import { zonesFromPainSites, type PainSite } from '@/features/patient/utils/body-map';
+import { sanitizePainDescriptors } from '@/features/patient/utils/pain-descriptors';
 import type { CheckInRecord, DoseChoice, Medication, ReliefAction } from '@/features/patient/types';
 
 /**
@@ -88,6 +89,8 @@ export type CheckinDraft = {
   /** DIF-03 · Gatillantes elegidos: ids del catálogo, o `otro` + `triggerOther` (opcional). */
   triggerSel: string[];
   triggerOther: string;
+  /** PAC-17 · Descriptores opcionales del dolor. */
+  painDescriptorSel: string[];
 };
 
 export const EMPTY_NOTES: CheckInNotes = { zones: '', mood: '', sleep: '' };
@@ -162,6 +165,7 @@ export function initialDraft(
     reliefSel: [],
     triggerSel: [],
     triggerOther: '',
+    painDescriptorSel: [],
   };
 }
 
@@ -290,6 +294,7 @@ export function buildCheckInRecord(
   );
   const reliefActions = sanitizeReliefActions(showAttribution ? draft.reliefSel : []);
   const painSites = draft.painSites.length ? draft.painSites : undefined;
+  const painDescriptors = sanitizePainDescriptors(draft.painDescriptorSel);
   const zones =
     painSites && painSites.length > 0 ? zonesFromPainSites(painSites) : draft.zones;
   return {
@@ -300,6 +305,7 @@ export function buildCheckInRecord(
     pain: draft.pain,
     zones,
     ...(painSites ? { painSites } : {}),
+    ...(painDescriptors.length ? { painDescriptors } : {}),
     mood: draft.mood || undefined,
     sleep: draft.sleep || undefined,
     emergency: draft.emergency,

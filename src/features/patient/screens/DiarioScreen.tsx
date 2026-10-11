@@ -28,6 +28,7 @@ import {
   formatInstructionDate,
   instructionTimeline,
 } from '@/features/patient/utils/instruction-history';
+import { checkInSecondaryLine } from '@/features/patient/utils/checkin-summary';
 import { patientProgress } from '@/features/patient/utils/progress';
 import { guideCardsForPathology } from '@/shared/data/guide-content';
 import { formatDecimal } from '@/shared/format/es-cl';
@@ -253,6 +254,7 @@ export function DiarioScreen() {
           <Text style={[styles.cardTitle, { color: palette.text }]}>Registros de hoy</Text>
           {todayRecords.map((r) => {
             const mood = moodLabel(r.mood);
+            const secondary = checkInSecondaryLine(r);
             return (
               <View key={r.id} style={[styles.row, { backgroundColor: palette.surfaceMuted }]}>
                 <View
@@ -272,6 +274,9 @@ export function DiarioScreen() {
                       .filter(Boolean)
                       .join(' · ') || '—'}
                   </Text>
+                  {secondary ? (
+                    <Text style={{ color: palette.textMuted, fontSize: 12, marginTop: 4 }}>{secondary}</Text>
+                  ) : null}
                   {!isSharedWithTeam(r) ? (
                     <Text
                       style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 4 }}

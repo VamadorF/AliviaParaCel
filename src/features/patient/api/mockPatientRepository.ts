@@ -9,6 +9,7 @@ import type { StoragePort } from '@/shared/storage/storagePort';
 import type { PatientBootstrap } from '@/features/patient/types';
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
 import { applyAppointmentAttendance } from '@/features/patient/utils/appointment-attendance';
+import { attachWeatherToCheckIn } from '@/features/patient/utils/checkin-weather';
 import { applyConsent, stampSharing } from '@/features/patient/utils/consent';
 import { acknowledgeInstruction } from '@/features/patient/utils/instruction-ack';
 import { submitPreConsult as applyPreConsult } from '@/features/patient/utils/pre-consult';
@@ -90,7 +91,10 @@ export function createMockPatientRepository({
       // MOB-06: con el consentimiento revocado el registro queda en el teléfono, marcado como no compartido.
       const next = {
         ...current,
-        checkIns: [stampSharing(record, current), ...current.checkIns],
+        checkIns: [
+          attachWeatherToCheckIn(stampSharing(record, current), current),
+          ...current.checkIns,
+        ],
       };
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return cloneBootstrap(next);

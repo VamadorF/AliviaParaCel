@@ -56,7 +56,8 @@ export function hasDraftProgress(draft: CheckinDraft, initialStep: number): bool
     draft.bowel.trim().length > 0 ||
     draft.appetite !== 'normal' ||
     draft.reliefSel.length > 0 ||
-    draft.triggerSel.length > 0
+    draft.triggerSel.length > 0 ||
+    draft.painDescriptorSel.length > 0
   );
 }
 

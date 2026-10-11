@@ -3,6 +3,10 @@ import { matchesCrisisSignal } from '@/features/patient/community/crisis-signals
 import { communityDisplayName, sanitizeAlias } from '@/features/patient/community/alias';
 import { moderate } from '@/features/patient/community/moderate';
 import { pathologyTagOf } from '@/features/patient/community/topic-tag';
+import {
+  communityPostRateLimitMessage,
+  isCommunityPostRateLimited,
+} from '@/features/patient/community/post-rate-limit';
 import type { ForumPost, PatientBootstrap } from '@/features/patient/types';
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 
@@ -17,7 +21,14 @@ export type CommunityPostInput = {
   parentId: string | null;
 };
 
-export type ForumRejectReason = 'empty' | 'abusive' | 'missing-topic';
+export type ForumRejectReason = 'empty' | 'abusive' | 'missing-topic' | 'rate-limit';
+
+export function forumRejectMessage(reason: ForumRejectReason): string {
+  if (reason === 'rate-limit') return communityPostRateLimitMessage();
+  if (reason === 'empty') return 'Escribe algo antes de publicar.';
+  if (reason === 'abusive') return 'AlivIA moderó tu publicación: revisa las normas de convivencia.';
+  return 'Ese tema ya no está disponible.';
+}
 
 export type ForumWrite =
   | { ok: true; data: PatientBootstrap }
@@ -59,6 +70,9 @@ export function appendCommunityPost(
   if (input.parentId) {
     const parent = data.posts.find((post) => post.id === input.parentId && !post.parentId);
     if (!parent) return { ok: false, reason: 'missing-topic' };
+  }
+  if (isCommunityPostRateLimited(data.posts, input.authorRut, input.at)) {
+    return { ok: false, reason: 'rate-limit' };
   }
   const text = input.text.trim();
   const alias = sanitizeAlias(input.displayAlias ?? '');
