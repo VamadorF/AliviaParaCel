@@ -1,4 +1,6 @@
+import * as Notifications from 'expo-notifications';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Linking } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import { syncScheduledReminders, type SyncResult } from '@/features/patient/notifications/localScheduler';
@@ -59,6 +61,14 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   const ensurePermission = useCallback(() => {
     askRef.current = true;
     setEpoch((n) => n + 1);
+  }, []);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === 'string') void Linking.openURL(url);
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {

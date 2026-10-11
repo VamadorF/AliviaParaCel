@@ -8,6 +8,7 @@ import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 import type { StoragePort } from '@/shared/storage/storagePort';
 import type { PatientBootstrap } from '@/features/patient/types';
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
+import { applyAppointmentAttendance } from '@/features/patient/utils/appointment-attendance';
 import { applyConsent, stampSharing } from '@/features/patient/utils/consent';
 import { acknowledgeInstruction } from '@/features/patient/utils/instruction-ack';
 import { submitPreConsult as applyPreConsult } from '@/features/patient/utils/pre-consult';
@@ -119,6 +120,16 @@ export function createMockPatientRepository({
       const current = await readOrSeed(userId, profile);
       if (isReadOnly(current)) return cloneBootstrap(current);
       const next = applyPreConsult(current, input, at);
+      if (next === current) return cloneBootstrap(current);
+      await storage.setItem(storageKey(userId), JSON.stringify(next));
+      return cloneBootstrap(next);
+    },
+
+    async submitAppointmentAttendance(userId, profile, input) {
+      await wait();
+      const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
+      const next = applyAppointmentAttendance(current, input);
       if (next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return cloneBootstrap(next);

@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { BodyMapPicker } from '@/features/patient/components/BodyMapPicker';
 import { Button } from '@/shared/components/Button';
 import { Chip } from '@/shared/components/Chip';
 import { IconTile } from '@/shared/icons/AppIcon';
@@ -41,11 +42,20 @@ import {
 import { moodChoices } from '@/shared/data/mood-options';
 import { OTHER_ID, RELIEF_LEVELS, RELIEF_LEVEL_LABEL, reliefLabel } from '@/shared/data/trigger-catalog';
 import type { Appetite, CheckinDraft } from '@/features/patient/utils/checkin';
+import {
+  checkinDraftKey,
+  hasDraftProgress,
+  loadFreshDraft,
+  serializeDraft,
+} from '@/features/patient/utils/checkin-draft';
+import { formatPainSite } from '@/features/patient/utils/body-map';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
 import { painColor, painLabel, painTextColor } from '@/features/patient/utils/pain';
+import { track } from '@/shared/analytics/track';
+import { formatDecimal } from '@/shared/format/es-cl';
+import { asyncStoragePort } from '@/shared/storage/asyncStorageAdapter';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
-const ZONES = ['Cabeza', 'Cuello', 'Hombro', 'Lumbar', 'Cadera', 'Rodilla', 'Otro'];
 const SLEEP = ['< 5 h', '5–6 h', '6–7 h', '7+ h'] as const;
 const SLEEP_NAME: Record<(typeof SLEEP)[number], string> = {
   '< 5 h': 'Sueño: menos de 5 horas',
@@ -59,14 +69,54 @@ export function CheckinScreen() {
   const { palette, mode } = useTheme();
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { data, saveCheckIn } = usePatientSession();
+  const { data, saveCheckIn, consent } = usePatientSession();
   const medications = useMemo(() => activeMedications(data.medications), [data.medications]);
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<CheckinDraft>(() =>
-    initialDraft(medications, lastCaregiverOf(data.checkIns, user?.rut ?? '')),
+  const baseDraft = useMemo(
+    () => initialDraft(medications, lastCaregiverOf(data.checkIns, user?.rut ?? '')),
+    [medications, data.checkIns, user?.rut],
   );
+  const [step, setStep] = useState(0);
+  const [draft, setDraft] = useState<CheckinDraft>(baseDraft);
+  const [resumeOffer, setResumeOffer] = useState<{
+    step: number;
+    draft: CheckinDraft;
+  } | null>(null);
+  const startedRef = useRef(false);
 
   const update = (patch: Partial<CheckinDraft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void asyncStoragePort.getItem(checkinDraftKey(user.id)).then((raw) => {
+      const stored = loadFreshDraft(raw);
+      if (!stored || !hasDraftProgress(stored.draft, stored.step)) return;
+      setResumeOffer({ step: stored.step, draft: stored.draft });
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || resumeOffer) return;
+    if (!hasDraftProgress(draft, step)) return;
+    const at = new Date().toISOString();
+    void asyncStoragePort.setItem(checkinDraftKey(user.id), serializeDraft(step, draft, at));
+  }, [user?.id, step, draft, resumeOffer]);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    track('checkin_start');
+  }, []);
+
+  useEffect(() => {
+    track('checkin_step', { step });
+  }, [step]);
+
+  useEffect(
+    () => () => {
+      if (hasDraftProgress(draft, step)) track('checkin_abandon', { step });
+    },
+    [draft, step],
+  );
   const blockers = useMemo(() => stepMissing(step, draft, medications), [step, draft, medications]);
   const isLast = step === STEP.resumen;
 
@@ -105,7 +155,32 @@ export function CheckinScreen() {
     const record = buildCheckInRecord(draft, medications, now, `local-${now.getTime()}`, showAttribution);
     if (!record) return;
     saveCheckIn(record);
+    track('checkin_saved', { step });
+    if (user?.id) void asyncStoragePort.removeItem(checkinDraftKey(user.id));
+    const message = consent.granted
+      ? 'Registro guardado correctamente'
+      : 'Registro guardado solo en este teléfono';
+    AccessibilityInfo.announceForAccessibility(message);
     navigation.goBack();
+  };
+
+  const resumeDraft = () => {
+    if (!resumeOffer) return;
+    setDraft({
+      ...baseDraft,
+      ...resumeOffer.draft,
+      painSites: resumeOffer.draft.painSites ?? [],
+    });
+    setStep(resumeOffer.step);
+    setResumeOffer(null);
+    track('checkin_draft_resume');
+  };
+
+  const discardDraft = () => {
+    if (user?.id) void asyncStoragePort.removeItem(checkinDraftKey(user.id));
+    setDraft(baseDraft);
+    setStep(0);
+    setResumeOffer(null);
   };
 
   const setDose = (medId: string, patch: Parameters<typeof patchDose>[1]) =>
@@ -116,6 +191,11 @@ export function CheckinScreen() {
   const diffDoses = medications
     .map((m) => ({ m, d: draft.doses[m.id] }))
     .filter(({ d }) => d && doseNeedsReason(d.taken));
+
+  const zoneSummary =
+    draft.painSites.length > 0
+      ? draft.painSites.map(formatPainSite).join(', ')
+      : draft.zones.join(', ') || '—';
 
   return (
     <ScrollView
@@ -134,6 +214,23 @@ export function CheckinScreen() {
         Check-in diario
       </Text>
       <ConsentBanner context="checkin" />
+      {resumeOffer ? (
+        <View
+          testID="checkin-draft-resume"
+          style={[styles.notice, { backgroundColor: palette.accentSoft, borderColor: palette.instructionBorder }]}
+        >
+          <View style={{ flex: 1, gap: 8 }}>
+            <Text style={{ color: palette.text, fontWeight: '800' }}>Continuar donde quedaste</Text>
+            <Text style={{ color: palette.textMuted, fontSize: 13, lineHeight: 19 }}>
+              Guardamos tu borrador durante 2 horas.
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button label="Continuar" onPress={resumeDraft} testID="checkin-draft-continue" />
+              <Button label="Empezar de nuevo" variant="ghost" onPress={discardDraft} />
+            </View>
+          </View>
+        </View>
+      ) : null}
       <View style={[styles.notice, { backgroundColor: palette.primarySoft, borderColor: palette.border }]}>
         <IconTile name="shield" color={palette.primary} background={palette.surface} size={32} iconSize={16} />
         <Text style={{ flex: 1, color: palette.text, fontSize: 13, lineHeight: 20 }} testID="checkin-ai-notice">
@@ -281,22 +378,10 @@ export function CheckinScreen() {
       {step === STEP.zonas ? (
         <View>
           <Text style={styles.label}>Zonas con dolor</Text>
-          <View style={styles.rowWrap}>
-            {ZONES.map((z) => (
-              <Chip
-                key={z}
-                label={z}
-                selected={draft.zones.includes(z)}
-                onPress={() =>
-                  update({
-                    zones: draft.zones.includes(z)
-                      ? draft.zones.filter((x) => x !== z)
-                      : [...draft.zones, z],
-                  })
-                }
-              />
-            ))}
-          </View>
+          <BodyMapPicker
+            value={draft.painSites}
+            onChange={(painSites) => update({ painSites, zones: [] })}
+          />
           <NoteToggle
             section="zonas"
             prompt="Cuéntanos más: cómo es el dolor (punzante, quemante…), cuándo empezó, qué lo alivia o empeora."
@@ -550,8 +635,7 @@ export function CheckinScreen() {
         <View style={styles.faceHero}>
           <PainFace value={draft.pain} size={64} />
           <Text style={{ color: palette.text, lineHeight: 24, textAlign: 'center' }}>
-            Dolor {draft.pain.toFixed(1)} ({painLabel(draft.pain)}). Zonas:{' '}
-            {draft.zones.join(', ') || '—'}.
+            Dolor {formatDecimal(draft.pain)} ({painLabel(draft.pain)}). Zonas: {zoneSummary}.
             {draft.emergency ? ' Incluye urgencias.' : ''}
           </Text>
           {draft.registrant === 'caregiver' ? (

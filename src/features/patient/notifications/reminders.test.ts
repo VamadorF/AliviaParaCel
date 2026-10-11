@@ -88,6 +88,7 @@ describe('recordatorios locales (MOB-18)', () => {
         id: 'alivia-daily',
         title: 'Registro de hoy',
         body: 'Es la hora que elegiste para anotar cómo estás.',
+        url: 'alivia://checkin',
         trigger: { type: 'daily', hour: 9, minute: 30 },
       },
     ]);

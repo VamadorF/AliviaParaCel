@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   },
   label: {
     alignSelf: 'stretch',
+    flexShrink: 1,
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',

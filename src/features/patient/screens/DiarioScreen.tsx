@@ -1,13 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useMemo } from 'react';
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Image, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { Screen } from '@/shared/components/Screen';
-import { dailyPainSeries, PainChart } from '@/shared/charts/PainChart';
+import { PainChart } from '@/shared/charts/PainChart';
 import { IconTile } from '@/shared/icons/AppIcon';
 import type { DiarioStackParamList } from '@/shared/types/navigation';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
@@ -23,6 +23,14 @@ import {
   formatInstructionRead,
   instructionReadAt,
 } from '@/features/patient/utils/instruction-ack';
+import { attendanceLabel } from '@/features/patient/utils/appointment-attendance';
+import {
+  formatInstructionDate,
+  instructionTimeline,
+} from '@/features/patient/utils/instruction-history';
+import { patientProgress } from '@/features/patient/utils/progress';
+import { guideCardsForPathology } from '@/shared/data/guide-content';
+import { formatDecimal } from '@/shared/format/es-cl';
 
 function openDialer(number: string) {
   Linking.openURL(telHref(number)).catch(() => {});
@@ -46,7 +54,10 @@ export function DiarioScreen() {
     isAcknowledgingInstruction,
     submitPreConsult,
     isSubmittingPreConsult,
+    submitAppointmentAttendance,
+    isSubmittingAppointmentAttendance,
   } = usePatientSession();
+  const [rescheduleReason, setRescheduleReason] = useState('');
   const navigation =
     useNavigation<NativeStackNavigationProp<DiarioStackParamList>>();
 
@@ -54,31 +65,24 @@ export function DiarioScreen() {
   const today = new Date().toISOString().slice(0, 10);
   const todayRecords = data.checkIns.filter((c) => c.date === today);
 
-  const streak = useMemo(() => {
-    const dates = new Set(data.checkIns.map((c) => c.date));
-    const [y, m, d0] = today.split('-').map(Number);
-    const anchor = Date.UTC(y, m - 1, d0);
-    let count = 0;
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(anchor - i * 86400000).toISOString().slice(0, 10);
-      if (dates.has(d)) count++;
-      else if (i > 0) break;
-    }
-    return count;
-  }, [data.checkIns, today]);
-
   const centerPhone = centerPhoneOf(data.clinic);
   const instructionRead = instructionReadAt(data);
-  const series = useMemo(() => dailyPainSeries(data.checkIns), [data.checkIns]);
+  const todayIso = today;
+  const progress = useMemo(() => patientProgress(data.checkIns, todayIso), [data.checkIns, todayIso]);
   const helped = useMemo(() => reliefHelpOf(data.checkIns), [data.checkIns]);
-  const recent = series.slice(-7);
-  const painAvg7 = recent.length
-    ? (recent.reduce((sum, value) => sum + value, 0) / recent.length).toFixed(1)
-    : '—';
-  const promptBg = mode === 'dark' ? '#1e4d38' : '#2b7a58';
-  const crisisBg = mode === 'dark' ? palette.surface : '#fbf6f3';
-  const crisisBorder = mode === 'dark' ? palette.border : '#f3e3dc';
-  const warnBg = mode === 'dark' ? '#3a2428' : '#fbe9ea';
+  const instructions = useMemo(
+    () => instructionTimeline(data.instruction, data.instructionHistory),
+    [data.instruction, data.instructionHistory],
+  );
+  const guides = useMemo(
+    () => guideCardsForPathology(data.pathology ?? ''),
+    [data.pathology],
+  );
+  const promptBg = mode === 'dark' ? palette.promptSurfaceDark : palette.prompt;
+  const crisisBg = palette.crisisSurface;
+  const crisisBorder = palette.crisisBorder;
+  const warnBg = palette.warnSurface;
+  const attendanceNote = attendanceLabel(data.appointment);
 
   return (
     <Screen>
@@ -99,10 +103,10 @@ export function DiarioScreen() {
           <Text style={[styles.sub, { color: palette.textMuted }]}>
             Hola {firstName} · {todayLabel()}
             {data.pathology ? ` · ${data.pathology}` : ''}
-            {streak >= 2 ? (
+            {progress.streak >= 2 ? (
               <Text style={{ color: palette.textPrimary, fontWeight: '700' }}>
                 {' '}
-                · Racha de {streak} días
+                · Racha de {progress.streak} días
               </Text>
             ) : null}
           </Text>
@@ -129,9 +133,56 @@ export function DiarioScreen() {
             </View>
           </View>
           {data.appointment.status === 'Pendiente' ? (
-            <Text style={[styles.badge, { color: palette.textWarning, backgroundColor: mode === 'dark' ? '#3a2e22' : '#fdf1e4' }]}>
+            <Text
+              style={[
+                styles.badge,
+                {
+                  color: palette.textWarning,
+                  backgroundColor: mode === 'dark' ? palette.badgePendingBgDark : palette.badgePendingBg,
+                },
+              ]}
+            >
               Por confirmar
             </Text>
+          ) : null}
+          {attendanceNote ? (
+            <Text style={{ color: palette.textPrimary, fontWeight: '800', marginTop: 10 }}>{attendanceNote}</Text>
+          ) : !data.appointment.attendance ? (
+            <View style={{ marginTop: 12, gap: 8 }}>
+              <Button
+                label="Confirmo asistencia"
+                testID="appointment-confirm"
+                disabled={isSubmittingAppointmentAttendance}
+                onPress={() => submitAppointmentAttendance({ attendance: 'confirmada' })}
+              />
+              <TextInput
+                value={rescheduleReason}
+                onChangeText={setRescheduleReason}
+                placeholder="Motivo opcional si necesitas reprogramar"
+                placeholderTextColor={palette.textMuted}
+                style={{
+                  borderWidth: 1,
+                  borderColor: palette.border,
+                  borderRadius: 12,
+                  padding: 12,
+                  color: palette.text,
+                  backgroundColor: palette.surface,
+                  minHeight: 48,
+                }}
+              />
+              <Button
+                label="Necesito reprogramar"
+                variant="ghost"
+                testID="appointment-reschedule"
+                disabled={isSubmittingAppointmentAttendance}
+                onPress={() =>
+                  submitAppointmentAttendance({
+                    attendance: 'reprogramar',
+                    rescheduleReason,
+                  })
+                }
+              />
+            </View>
           ) : null}
           <PreConsultBlock
             appointment={data.appointment}
@@ -142,10 +193,10 @@ export function DiarioScreen() {
         </Card>
       ) : null}
 
-      {data.instruction && data.instruction.text.trim() ? (
+      {instructions.current?.text.trim() ? (
         <Card
           testID="instruction-card"
-          style={[styles.block, { backgroundColor: palette.accentSoft, borderColor: '#dde5f6' }]}
+          style={[styles.block, { backgroundColor: palette.accentSoft, borderColor: palette.instructionBorder }]}
         >
           <Text
             accessibilityRole="header"
@@ -159,7 +210,7 @@ export function DiarioScreen() {
             accessibilityLabel={data.instruction.text}
             style={[styles.cardTitle, { color: palette.text }]}
           >
-            {data.instruction.text}
+            {instructions.current.text}
           </Text>
           {instructionRead ? (
             <Text
@@ -183,6 +234,19 @@ export function DiarioScreen() {
           )}
         </Card>
       ) : null}
+      {instructions.previous.length > 0 ? (
+        <Card testID="instruction-history" style={styles.block}>
+          <Text style={[styles.kicker, { color: palette.textMuted }]}>INSTRUCCIONES ANTERIORES</Text>
+          {instructions.previous.map((row) => (
+            <View key={row.id} style={{ marginTop: 10 }}>
+              <Text style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800' }}>
+                {formatInstructionDate(row.date)}
+              </Text>
+              <Text style={{ color: palette.text, marginTop: 4, lineHeight: 20 }}>{row.text}</Text>
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       {todayRecords.length > 0 ? (
         <Card style={styles.block}>
@@ -190,12 +254,14 @@ export function DiarioScreen() {
           {todayRecords.map((r) => {
             const mood = moodLabel(r.mood);
             return (
-              <View key={r.id} style={[styles.row, { backgroundColor: '#f7f9f6' }]}>
+              <View key={r.id} style={[styles.row, { backgroundColor: palette.surfaceMuted }]}>
                 <View
                   style={[styles.painDot, { backgroundColor: painPlate(r.pain) }]}
-                  accessibilityLabel={`Dolor ${r.pain.toFixed(1)}, ${painLabel(r.pain)}`}
+                  accessibilityLabel={`Dolor ${formatDecimal(r.pain)}, ${painLabel(r.pain)}`}
                 >
-                  <Text style={styles.painNum}>{r.pain.toFixed(1)}</Text>
+                  <Text style={[styles.painNum, { color: palette.onPrimary }]}>
+                    {formatDecimal(r.pain)}
+                  </Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: '700', color: palette.text }}>
@@ -260,25 +326,55 @@ export function DiarioScreen() {
       />
 
       <Card style={styles.block}>
-        <Text style={[styles.cardTitle, { color: palette.text, marginTop: 0 }]}>Evolución del dolor</Text>
-        <Text style={{ color: palette.textMuted, fontSize: 12, marginBottom: 8 }}>
-          Escala EVA 0–10 · promedio de cada día
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.cardTitle, { color: palette.text, marginTop: 0 }]}>Mi progreso</Text>
+          <Button label="Ver todo →" variant="ghost" onPress={() => navigation.navigate('Progreso')} />
+        </View>
         <View style={styles.stats}>
-          <View style={[styles.stat, { backgroundColor: mode === 'dark' ? palette.background : '#f7f9f6' }]}>
-            <Text style={[styles.statValue, { color: palette.textPrimary }]}>{streak}</Text>
+          <View style={[styles.stat, { backgroundColor: palette.surfaceMuted }]}>
+            <Text style={[styles.statValue, { color: palette.textPrimary }]}>{progress.streak}</Text>
             <Text style={[styles.statLabel, { color: palette.textMuted }]}>días de racha</Text>
           </View>
-          <View style={[styles.stat, { backgroundColor: mode === 'dark' ? palette.background : '#f7f9f6' }]}>
-            <Text style={[styles.statValue, { color: palette.textWarning }]}>{painAvg7}</Text>
+          <View style={[styles.stat, { backgroundColor: palette.surfaceMuted }]}>
+            <Text style={[styles.statValue, { color: palette.textWarning }]}>{progress.painAvg7}</Text>
             <Text style={[styles.statLabel, { color: palette.textMuted }]}>dolor prom. 7d</Text>
           </View>
-          <View style={[styles.stat, { backgroundColor: mode === 'dark' ? palette.background : '#f7f9f6' }]}>
-            <Text style={[styles.statValue, { color: palette.text }]}>{data.checkIns.length}</Text>
+          <View style={[styles.stat, { backgroundColor: palette.surfaceMuted }]}>
+            <Text style={[styles.statValue, { color: palette.text }]}>{progress.total}</Text>
             <Text style={[styles.statLabel, { color: palette.textMuted }]}>registros</Text>
           </View>
         </View>
-        <PainChart values={series} gridColor={palette.border} labelColor={palette.textMuted} />
+        <PainChart values={progress.series} gridColor={palette.border} labelColor={palette.textMuted} />
+      </Card>
+
+      <Card style={styles.block}>
+        <Text style={[styles.cardTitle, { color: palette.text, marginTop: 0 }]}>Orientación y apoyo</Text>
+        <Text style={{ color: palette.textMuted, fontSize: 12, marginBottom: 10, lineHeight: 18 }}>
+          Sugerido según tu patología · solo fuentes confiables.
+        </Text>
+        {guides.map((guide) => (
+          <Pressable
+            key={guide.title}
+            accessibilityRole="link"
+            accessibilityHint="Abre en el navegador del sistema"
+            onPress={() => Linking.openURL(guide.href).catch(() => {})}
+            style={({ pressed }) => [
+              styles.guideRow,
+              { borderColor: palette.border, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <IconTile name="book" color={palette.accent} background={palette.accentSoft} size={40} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: palette.text, fontWeight: '800' }}>{guide.title}</Text>
+              <Text style={{ color: palette.textMuted, fontSize: 13, marginTop: 4, lineHeight: 18 }}>
+                {guide.desc}
+              </Text>
+              <Text style={{ color: palette.textPrimary, fontWeight: '800', fontSize: 12, marginTop: 6 }}>
+                {guide.src} ↗
+              </Text>
+            </View>
+          </Pressable>
+        ))}
       </Card>
 
       <Card testID="relief-help-card" style={styles.block}>
@@ -393,10 +489,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  painNum: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  painNum: { fontWeight: '800', fontSize: 15 },
   prompt: { borderRadius: 20, padding: 22, marginBottom: 14 },
   promptTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
   promptBody: { color: 'rgba(255,255,255,0.88)', marginTop: 6, lineHeight: 20, fontSize: 13 },
+  guideRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
   iconRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stats: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   stat: { flex: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center' },

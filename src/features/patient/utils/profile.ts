@@ -6,6 +6,7 @@ import type {
 } from '@/features/patient/types';
 import { communityAuthor } from '@/features/patient/community/forum';
 import { applyConsent } from '@/features/patient/utils/consent';
+import { painObservationsForExport } from '@/features/patient/utils/fhir-export';
 import { activeMedications } from '@/features/patient/utils/medications';
 
 const DAY_MS = 86400000;
@@ -194,6 +195,11 @@ export function buildRecordFile(input: {
       duracion: med.duration,
     })),
     registros: data.checkIns,
+    fhir: {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: painObservationsForExport(data.checkIns).map((resource) => ({ resource })),
+    },
     consentimiento: data.consent ?? null,
     cita: data.appointment,
     clinica: data.clinic ?? null,

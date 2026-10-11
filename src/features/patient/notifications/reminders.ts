@@ -43,6 +43,8 @@ export type PlannedReminder = {
   id: string;
   title: string;
   body: string;
+  /** MOB-24 · Deep link al abrir el aviso. */
+  url?: string;
   trigger: { type: 'daily'; hour: number; minute: number } | { type: 'date'; at: string };
 };
 
@@ -178,6 +180,7 @@ export function planLocalReminders(input: {
       id: dailyReminderId(),
       title: 'Registro de hoy',
       body: 'Es la hora que elegiste para anotar cómo estás.',
+      url: 'alivia://checkin',
       trigger: { type: 'daily', hour: settings.dailyTime.hour, minute: settings.dailyTime.minute },
     });
   }
@@ -205,6 +208,7 @@ export function planLocalReminders(input: {
         id: appointmentReminderId(appointment.id),
         title: 'Consulta',
         body: visit.body,
+        url: `alivia://consulta/${encodeURIComponent(appointment.id)}`,
         trigger: { type: 'date', at: visit.at },
       });
     }

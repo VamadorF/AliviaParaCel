@@ -10,9 +10,11 @@ import {
   resetPatientDemoData,
   setPatientConsent,
   setPatientPhoto,
+  submitPatientAppointmentAttendance,
   submitPatientPreConsult,
   updatePatientContact,
 } from '@/features/patient/api/patientApi';
+import type { AttendanceInput } from '@/features/patient/utils/appointment-attendance';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import { flushOutbox } from '@/features/patient/sync/outbox';
 import type { ConsentAction, PatientBootstrap, PreConsultInput } from '@/features/patient/types';
@@ -78,6 +80,19 @@ export function useSubmitPreConsultMutation() {
   return useMutation({
     mutationFn: (input: PreConsultInput) =>
       submitPatientPreConsult(user!.id, user!.profile, input, new Date().toISOString()),
+    onSuccess: (data) => {
+      cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useSubmitAppointmentAttendanceMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: AttendanceInput) =>
+      submitPatientAppointmentAttendance(user!.id, user!.profile, input),
     onSuccess: (data) => {
       cacheBootstrap(queryClient, user?.id, data);
     },

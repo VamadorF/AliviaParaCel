@@ -33,13 +33,13 @@ describe('PAC-08 · acuse de instrucción', () => {
     const storage = createMemoryStorage();
     const patient = createMockPatientRepository({ storage, delayMs: 0 });
     const saved = await patient.acknowledgeInstruction(demoUser.id, 'demo', AT);
-    expect(saved.instructionAcks).toEqual([{ alertId: 1, readAt: AT }]);
+    expect(saved.instructionAcks).toEqual([{ alertId: 2, readAt: AT }]);
 
     const reloaded = await createMockPatientRepository({ storage, delayMs: 0 }).loadBootstrap(
       demoUser.id,
       'demo',
     );
-    expect(reloaded.instructionAcks).toEqual([{ alertId: 1, readAt: AT }]);
+    expect(reloaded.instructionAcks).toEqual([{ alertId: 2, readAt: AT }]);
     expect(instructionReadAt(reloaded)).toBe(AT);
   });
 

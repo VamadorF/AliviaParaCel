@@ -14,6 +14,7 @@ import {
   useUpdateContactMutation,
 } from '@/features/patient/hooks/usePatientBootstrap';
 import { shareRecordFile } from '@/features/patient/profile/share-record';
+import { AppLockSettingsCard } from '@/features/security/AppLockSettingsCard';
 import type { LinkRequest } from '@/features/patient/types';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
 import {
@@ -413,6 +414,7 @@ export function PatientProfileScreen() {
         testID="privacy-open"
       />
       <View style={{ height: 12 }} />
+      <AppLockSettingsCard />
       <Card>
         <Text style={{ fontWeight: '800', color: palette.text }}>Recordatorios</Text>
         <Text style={{ color: palette.textMuted, marginTop: 6, lineHeight: 21, marginBottom: 12 }}>

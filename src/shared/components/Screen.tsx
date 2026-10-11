@@ -44,6 +44,7 @@ export function Screen({
       contentContainerStyle={containerStyle}
       refreshControl={refreshControl}
       keyboardShouldPersistTaps="handled"
+      contentInsetAdjustmentBehavior="automatic"
     >
       {children}
     </ScrollView>

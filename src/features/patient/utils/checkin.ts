@@ -18,6 +18,7 @@ import {
   sanitizeTriggers,
   triggerLabel,
 } from '@/shared/data/trigger-catalog';
+import { zonesFromPainSites, type PainSite } from '@/features/patient/utils/body-map';
 import type { CheckInRecord, DoseChoice, Medication, ReliefAction } from '@/features/patient/types';
 
 /**
@@ -69,6 +70,7 @@ export type CheckinDraft = {
   caregiverRelation: string;
   pain: number;
   zones: string[];
+  painSites: PainSite[];
   mood: string;
   sleep: string;
   notes: CheckInNotes;
@@ -146,6 +148,7 @@ export function initialDraft(
     caregiverRelation: caregiver?.relation ?? '',
     pain: 5,
     zones: [],
+    painSites: [],
     mood: '',
     sleep: '',
     notes: { ...EMPTY_NOTES },
@@ -204,7 +207,9 @@ export function stepMissing(step: number, draft: CheckinDraft, medications: Medi
       if (!draft.caregiverRelation.trim()) out.push('relación del cuidador');
     }
   }
-  if (step === STEP.zonas && draft.zones.length === 0) out.push('al menos una zona');
+  if (step === STEP.zonas && draft.painSites.length === 0 && draft.zones.length === 0) {
+    out.push('al menos una zona');
+  }
   if (step === STEP.medicamentos && medications.length > 0) {
     const err = validateDoses(dosesInOrder(draft, medications));
     if (err) out.push(err.replace(/^Falta /, '').replace(/^Describe /, ''));
@@ -284,13 +289,17 @@ export function buildCheckInRecord(
       : [],
   );
   const reliefActions = sanitizeReliefActions(showAttribution ? draft.reliefSel : []);
+  const painSites = draft.painSites.length ? draft.painSites : undefined;
+  const zones =
+    painSites && painSites.length > 0 ? zonesFromPainSites(painSites) : draft.zones;
   return {
     id,
     date: now.toISOString().slice(0, 10),
     time: now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }),
     createdAt: now.toISOString(),
     pain: draft.pain,
-    zones: draft.zones,
+    zones,
+    ...(painSites ? { painSites } : {}),
     mood: draft.mood || undefined,
     sleep: draft.sleep || undefined,
     emergency: draft.emergency,

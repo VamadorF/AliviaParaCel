@@ -1,5 +1,6 @@
 import type { CheckInDose } from '@/shared/core/checkin-dose';
 import type { CheckInNotes, GiDetail } from '@/shared/core/checkin-row';
+import type { PainSite } from '@/features/patient/utils/body-map';
 import type { ReliefAction } from '@/shared/data/trigger-catalog';
 
 export type { ReliefAction, ReliefLevel } from '@/shared/data/trigger-catalog';
@@ -33,6 +34,8 @@ export type CheckInRecord = {
   time: string;
   pain: number;
   zones: string[];
+  /** PAC-16 · Zonas con lateralidad y vista. Ausente en registros antiguos. */
+  painSites?: PainSite[];
   mood?: string;
   sleep?: string;
   emergency: boolean;
@@ -97,6 +100,8 @@ export type PreConsultInput = {
   functionalGoal: string;
 };
 
+export type AppointmentAttendance = 'confirmada' | 'reprogramar';
+
 export type Appointment = {
   id: string;
   scheduledAt: string;
@@ -105,6 +110,9 @@ export type Appointment = {
   status: 'Pendiente' | 'Confirmada';
   /** Ausente o null: el paciente no respondió. La consulta sigue igual. */
   preConsult?: PreConsult | null;
+  /** PAC-11 · Confirmación o petición de reprogramar. */
+  attendance?: AppointmentAttendance | null;
+  rescheduleReason?: string;
 };
 
 export type TeamInstruction = {
@@ -136,6 +144,12 @@ export type ForumPost = {
   author: string;
   excerpt: string;
   at: string;
+  /** COM-04 · Etiqueta de patología del hilo. */
+  topicTag?: string;
+  /** COM-05 · RUT real del autor (moderación). */
+  authorRut?: string;
+  /** COM-05 · Alias visible si el autor lo eligió. */
+  displayAlias?: string;
   /** MOB-11 · Ausente o null: tema. Si tiene id, es una respuesta a ese tema. */
   parentId?: string | null;
   /** COM-01 · Ausente = visible. true = ocultada; en el móvil se marca en el fixture o con hideCommunityPost. */
@@ -214,6 +228,8 @@ export type PatientBootstrap = {
   checkIns: CheckInRecord[];
   appointment: Appointment | null;
   instruction: TeamInstruction | null;
+  /** PAC-09 · Instrucciones anteriores, con fecha. La vigente va aparte. */
+  instructionHistory?: TeamInstruction[];
   /** PAC-08 · Acuses ya registrados. Ausente = ninguna instrucción leída. */
   instructionAcks?: InstructionAck[];
   messages: Message[];

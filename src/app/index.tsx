@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { navigationRef } from '@/app/navigation/navigationRef';
+import { linking } from '@/app/navigation/linking';
 import { RootNavigator } from '@/app/navigation/RootNavigator';
 import i18n from '@/shared/i18n';
 import { ThemeProvider, useTheme } from '@/shared/theme/ThemeContext';
@@ -33,7 +34,7 @@ function AppShell() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <RootNavigator />
     </NavigationContainer>
