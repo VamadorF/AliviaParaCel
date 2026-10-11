@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { ConsentCard } from '@/features/patient/components/ConsentCard';
@@ -47,14 +47,19 @@ export function PatientProfileScreen() {
   const deleteAccount = useRequestAccountDeletionMutation();
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
-  const [email, setEmail] = useState(data.email ?? '');
-  const [phone, setPhone] = useState(data.phone ?? '');
+  const sourceEmail = data.email ?? '';
+  const sourcePhone = data.phone ?? '';
+  const [draft, setDraft] = useState<{
+    email: string;
+    phone: string;
+    sourceEmail: string;
+    sourcePhone: string;
+  } | null>(null);
+  const editing =
+    draft != null && draft.sourceEmail === sourceEmail && draft.sourcePhone === sourcePhone;
+  const email = editing ? draft.email : sourceEmail;
+  const phone = editing ? draft.phone : sourcePhone;
   const navigation = useNavigation<NativeStackNavigationProp<PerfilStackParamList>>();
-
-  useEffect(() => {
-    setEmail(data.email ?? '');
-    setPhone(data.phone ?? '');
-  }, [data.email, data.phone]);
 
   const team = data.team ?? [];
   const requests = data.linkRequests ?? [];
@@ -130,7 +135,7 @@ export function PatientProfileScreen() {
         <Text
           accessibilityLiveRegion="polite"
           style={{
-            color: notice.error ? palette.danger : palette.primary,
+            color: notice.error ? palette.textDanger : palette.textPrimary,
             fontWeight: '600',
             marginBottom: 8,
             lineHeight: 21,
@@ -215,7 +220,9 @@ export function PatientProfileScreen() {
         <TextField
           label="Correo electrónico"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(value) =>
+            setDraft({ email: value, phone, sourceEmail, sourcePhone })
+          }
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -224,7 +231,9 @@ export function PatientProfileScreen() {
         <TextField
           label="Teléfono"
           value={phone}
-          onChangeText={setPhone}
+          onChangeText={(value) =>
+            setDraft({ email, phone: value, sourceEmail, sourcePhone })
+          }
           keyboardType="phone-pad"
           testID="contact-phone"
         />
@@ -337,7 +346,7 @@ export function PatientProfileScreen() {
         <View style={styles.identity}>
           <IconTile name="warn" color={palette.danger} background={mode === 'dark' ? '#3a2428' : '#fbe9ea'} size={44} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '800', color: palette.danger }}>En caso de crisis de dolor</Text>
+            <Text style={{ fontWeight: '800', color: palette.textDanger }}>En caso de crisis de dolor</Text>
             <Text style={{ color: palette.textMuted, marginTop: 6, lineHeight: 21 }}>
               Urgencias: <Text style={{ fontWeight: '800' }}>131</Text>
             </Text>
@@ -393,7 +402,7 @@ export function PatientProfileScreen() {
           {resetMessage ? (
             <Text
               accessibilityLiveRegion="polite"
-              style={{ color: palette.primary, fontWeight: '600', marginBottom: 8 }}
+              style={{ color: palette.textPrimary, fontWeight: '600', marginBottom: 8 }}
             >
               {resetMessage}
             </Text>

@@ -32,7 +32,7 @@ export function OptionChip({ label, selected, onPress, accessibilityLabel, testI
       <Text
         style={{
           fontSize: 15,
-          color: selected ? palette.primary : palette.text,
+          color: selected ? palette.textPrimary : palette.text,
           fontWeight: selected ? '700' : '600',
         }}
       >
@@ -148,7 +148,7 @@ export function NoteToggle({ section, prompt, value, onChangeText, testID }: Not
         style={styles.noteToggle}
         testID={testID ? `${testID}-toggle` : undefined}
       >
-        <Text style={{ color: palette.primary, fontWeight: '700', fontSize: 14 }}>
+        <Text style={{ color: palette.textPrimary, fontWeight: '700', fontSize: 14 }}>
           {open ? 'Ocultar detalle' : 'Tengo algo más que agregar'}
         </Text>
       </Pressable>

@@ -42,7 +42,7 @@ import { moodChoices } from '@/shared/data/mood-options';
 import { OTHER_ID, RELIEF_LEVELS, RELIEF_LEVEL_LABEL, reliefLabel } from '@/shared/data/trigger-catalog';
 import type { Appetite, CheckinDraft } from '@/features/patient/utils/checkin';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
-import { painColor, painLabel } from '@/features/patient/utils/pain';
+import { painColor, painLabel, painTextColor } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 const ZONES = ['Cabeza', 'Cuello', 'Hombro', 'Lumbar', 'Cadera', 'Rodilla', 'Otro'];
@@ -56,7 +56,7 @@ const SLEEP_NAME: Record<(typeof SLEEP)[number], string> = {
 const APPETITES: Appetite[] = ['normal', 'reducido', 'nulo'];
 
 export function CheckinScreen() {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const navigation = useNavigation();
   const { user } = useAuth();
   const { data, saveCheckIn } = usePatientSession();
@@ -143,7 +143,7 @@ export function CheckinScreen() {
 
       {blockers.length > 0 ? (
         <Text
-          style={{ color: palette.danger, marginBottom: 12 }}
+          style={{ color: palette.textDanger, marginBottom: 12 }}
           accessibilityLiveRegion="polite"
           testID="checkin-falta"
         >
@@ -234,10 +234,10 @@ export function CheckinScreen() {
           <Text style={styles.label}>¿Cuánto dolor sientes ahora?</Text>
           <View style={styles.faceHero}>
             <PainFace value={draft.pain} size={84} />
-            <Text style={{ fontSize: 36, fontWeight: '800', color: painColor(draft.pain) }}>
+            <Text style={{ fontSize: 36, fontWeight: '800', color: painTextColor(draft.pain, mode) }}>
               {draft.pain}
             </Text>
-            <Text style={{ color: painColor(draft.pain), fontWeight: '700' }}>
+            <Text style={{ color: painTextColor(draft.pain, mode), fontWeight: '700' }}>
               {painLabel(draft.pain)}
             </Text>
           </View>
@@ -256,8 +256,8 @@ export function CheckinScreen() {
                     selected && { backgroundColor: palette.primarySoft },
                   ]}
                 >
-                  <PainFace value={face.num} size={28} color={selected ? painColor(face.num) : '#b8c4bd'} />
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: selected ? painColor(face.num) : '#b8c4bd' }}>
+                  <PainFace value={face.num} size={28} color={selected ? painColor(face.num) : palette.textMuted} />
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: selected ? painTextColor(face.num, mode) : palette.textMuted }}>
                     {face.num}
                   </Text>
                 </Pressable>

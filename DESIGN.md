@@ -2,19 +2,28 @@
 
 ## Color
 
-| Token | Valor | Uso |
-| --- | --- | --- |
-| background | `#eef1ec` | Fondo app |
-| surface | `#ffffff` | Tarjetas |
-| primary | `#256e4d` | CTA, nav activo |
-| text | `#16211c` | Títulos y cuerpo |
-| textMuted | `#71807a` | Meta |
-| border | `#e7ebe7` | Bordes |
-| danger | `#b03a44` | Crisis, logout |
-| warning | `#e08a2f` | Pendiente |
-| accent | `#4f5bc0` | Instrucción equipo |
+Tokens de contraste aprobados por el PO el 2026-10-10 (D-01). El texto legible usa `text*` y llega a 4,5:1. Los rellenos (`primary`, `warning`, `danger`, `accent`) se mantienen para fondos, bordes e íconos. `#8a9790` y `#a9b4ae` no se usan como letra.
 
-Contraste texto normal ≥ 4.5:1; UI ≥ 3:1.
+| Token | Claro | Oscuro | Uso |
+| --- | --- | --- | --- |
+| background | `#eef1ec` | `#1a211e` | Fondo app |
+| surface | `#ffffff` | `#243028` | Tarjetas |
+| text | `#16211c` | `#eef1ec` | Títulos y cuerpo |
+| textMuted | `#5c6a64` | `#a8b4ae` | Meta, hints, caras EVA no elegidas |
+| textPrimary | `#256e4d` | `#5abe90` | Texto verde |
+| textWarning | `#995a17` | `#e8a55a` | Texto de advertencia |
+| textDanger | `#b03a44` | `#e7969e` | Texto de peligro |
+| textAccent | `#4f5bc0` | `#aab2ee` | Texto de acento |
+| onPrimary | `#ffffff` | `#16211c` | Letra sobre el relleno `primary` |
+| primary | `#256e4d` | `#3d9a6f` | Relleno de CTA |
+| primarySoft | `#e6f2ec` | `#2a4034` | Fondo suave |
+| border | `#e7ebe7` | `#3d4a42` | Bordes |
+| danger | `#b03a44` | `#e07a84` | Ícono y borde de crisis |
+| warning | `#e08a2f` | `#e8a55a` | Relleno y borde de aviso |
+| accent | `#4f5bc0` | `#8b96e8` | Ícono de instrucción |
+| accentSoft | `#eef2fb` | `#2a3048` | Fondo de instrucción |
+
+Contraste texto normal ≥ 4.5:1; UI ≥ 3:1. `ThemeContext` entrega esta paleta.
 
 ## Type
 

@@ -30,7 +30,7 @@ export function MainTabs() {
           borderTopColor: palette.border,
           minHeight: 56,
         },
-        tabBarActiveTintColor: palette.primary,
+        tabBarActiveTintColor: palette.textPrimary,
         tabBarInactiveTintColor: palette.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
       }}

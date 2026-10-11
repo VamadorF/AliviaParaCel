@@ -31,7 +31,7 @@ export function Chip({ label, selected, onPress, accessibilityHint, accessibilit
       <Text
         style={[
           styles.label,
-          { color: selected ? palette.primary : palette.text, fontWeight: selected ? '700' : '600' },
+          { color: selected ? palette.textPrimary : palette.text, fontWeight: selected ? '700' : '600' },
         ]}
       >
         {label}

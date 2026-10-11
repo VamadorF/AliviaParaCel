@@ -15,7 +15,7 @@ import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
 import { PreConsultBlock } from '@/features/patient/components/PreConsultBlock';
 import { isSharedWithTeam } from '@/features/patient/utils/consent';
 import { EMERGENCY_TEL, centerPhoneOf, telHref } from '@/features/patient/utils/crisis';
-import { painColor, painLabel } from '@/features/patient/utils/pain';
+import { painLabel, painPlate } from '@/features/patient/utils/pain';
 import { reliefHelpDetail, reliefHelpOf } from '@/features/patient/utils/relief-help';
 import { moodLabel } from '@/shared/data/mood-options';
 import { useTheme } from '@/shared/theme/ThemeContext';
@@ -100,7 +100,7 @@ export function DiarioScreen() {
             Hola {firstName} · {todayLabel()}
             {data.pathology ? ` · ${data.pathology}` : ''}
             {streak >= 2 ? (
-              <Text style={{ color: palette.primary, fontWeight: '700' }}>
+              <Text style={{ color: palette.textPrimary, fontWeight: '700' }}>
                 {' '}
                 · Racha de {streak} días
               </Text>
@@ -129,13 +129,13 @@ export function DiarioScreen() {
             </View>
           </View>
           {data.appointment.status === 'Pendiente' ? (
-            <Text style={[styles.badge, { color: palette.warning, backgroundColor: mode === 'dark' ? '#3a2e22' : '#fdf1e4' }]}>
+            <Text style={[styles.badge, { color: palette.textWarning, backgroundColor: mode === 'dark' ? '#3a2e22' : '#fdf1e4' }]}>
               Por confirmar
             </Text>
           ) : null}
           <PreConsultBlock
             appointment={data.appointment}
-            nowMs={Date.now()}
+            nowMs={new Date(today).getTime()}
             submitting={isSubmittingPreConsult}
             onSubmit={submitPreConsult}
           />
@@ -150,7 +150,7 @@ export function DiarioScreen() {
           <Text
             accessibilityRole="header"
             accessibilityLabel="Instrucción de tu equipo"
-            style={[styles.kicker, { color: palette.accent }]}
+            style={[styles.kicker, { color: palette.textAccent }]}
           >
             INSTRUCCIÓN DE TU EQUIPO
           </Text>
@@ -166,7 +166,7 @@ export function DiarioScreen() {
               testID="instruction-read"
               accessibilityRole="text"
               accessibilityLiveRegion="polite"
-              style={{ color: palette.primary, fontWeight: '800', fontSize: 13, marginTop: 10 }}
+              style={{ color: palette.textPrimary, fontWeight: '800', fontSize: 13, marginTop: 10 }}
             >
               {formatInstructionRead(instructionRead)}
             </Text>
@@ -192,7 +192,7 @@ export function DiarioScreen() {
             return (
               <View key={r.id} style={[styles.row, { backgroundColor: '#f7f9f6' }]}>
                 <View
-                  style={[styles.painDot, { backgroundColor: painColor(r.pain) }]}
+                  style={[styles.painDot, { backgroundColor: painPlate(r.pain) }]}
                   accessibilityLabel={`Dolor ${r.pain.toFixed(1)}, ${painLabel(r.pain)}`}
                 >
                   <Text style={styles.painNum}>{r.pain.toFixed(1)}</Text>
@@ -266,11 +266,11 @@ export function DiarioScreen() {
         </Text>
         <View style={styles.stats}>
           <View style={[styles.stat, { backgroundColor: mode === 'dark' ? palette.background : '#f7f9f6' }]}>
-            <Text style={[styles.statValue, { color: palette.primary }]}>{streak}</Text>
+            <Text style={[styles.statValue, { color: palette.textPrimary }]}>{streak}</Text>
             <Text style={[styles.statLabel, { color: palette.textMuted }]}>días de racha</Text>
           </View>
           <View style={[styles.stat, { backgroundColor: mode === 'dark' ? palette.background : '#f7f9f6' }]}>
-            <Text style={[styles.statValue, { color: palette.warning }]}>{painAvg7}</Text>
+            <Text style={[styles.statValue, { color: palette.textWarning }]}>{painAvg7}</Text>
             <Text style={[styles.statLabel, { color: palette.textMuted }]}>dolor prom. 7d</Text>
           </View>
           <View style={[styles.stat, { backgroundColor: mode === 'dark' ? palette.background : '#f7f9f6' }]}>
@@ -335,7 +335,7 @@ export function DiarioScreen() {
             { borderColor: palette.danger, opacity: pressed ? 0.75 : 1 },
           ]}
         >
-          <Text style={{ color: palette.danger, fontWeight: '800', fontSize: 16 }}>
+          <Text style={{ color: palette.textDanger, fontWeight: '800', fontSize: 16 }}>
             Llamar al {EMERGENCY_TEL}
           </Text>
         </Pressable>

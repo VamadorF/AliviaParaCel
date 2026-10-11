@@ -42,12 +42,12 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#fff' : palette.primary} />
+        <ActivityIndicator color={isPrimary ? palette.onPrimary : palette.textPrimary} />
       ) : (
         <Text
           style={[
             styles.label,
-            { color: isPrimary ? '#ffffff' : palette.primary },
+            { color: isPrimary ? palette.onPrimary : palette.textPrimary },
           ]}
         >
           {label}

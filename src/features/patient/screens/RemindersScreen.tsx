@@ -88,7 +88,7 @@ function ClockField({
         ]}
       />
       {invalid ? (
-        <Text style={{ color: palette.danger, marginTop: 6 }} accessibilityLiveRegion="polite">
+        <Text style={{ color: palette.textDanger, marginTop: 6 }} accessibilityLiveRegion="polite">
           Usa una hora como 09:00.
         </Text>
       ) : null}
@@ -189,7 +189,7 @@ export function RemindersScreen() {
         </Text>
       ) : null}
       {saved ? (
-        <Text accessibilityLiveRegion="polite" style={{ color: palette.primary, fontWeight: '700', marginBottom: 12 }}>
+        <Text accessibilityLiveRegion="polite" style={{ color: palette.textPrimary, fontWeight: '700', marginBottom: 12 }}>
           {saved}
         </Text>
       ) : null}

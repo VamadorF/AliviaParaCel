@@ -191,7 +191,7 @@ export function ComunidadScreen() {
         <Text
           accessibilityLiveRegion="polite"
           style={{
-            color: feedback.tone === 'danger' ? palette.danger : palette.primary,
+            color: feedback.tone === 'danger' ? palette.textDanger : palette.textPrimary,
             marginBottom: 12,
             lineHeight: 20,
           }}
@@ -349,7 +349,7 @@ function PostModeration({
           style={styles.reportBtn}
           testID="report-post"
         >
-          <Text style={{ color: palette.primary, fontWeight: '700' }}>Reportar</Text>
+          <Text style={{ color: palette.textPrimary, fontWeight: '700' }}>Reportar</Text>
         </Pressable>
       ) : null}
       {canReport && open ? (

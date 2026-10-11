@@ -27,19 +27,20 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
   const { data } = usePatientSession();
   const userId = user?.id;
   const [settings, setSettings] = useState<ReminderSettings>(defaultReminderSettings);
-  const [ready, setReady] = useState(false);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [permission, setPermission] = useState<SyncResult | 'unknown'>('unknown');
   const [epoch, setEpoch] = useState(0);
   const askRef = useRef(false);
+  const ready = userId != null && loadedFor === userId;
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    setReady(false);
-    void loadReminderSettings(asyncStoragePort, userId).then((loaded) => {
+    const id = userId;
+    void loadReminderSettings(asyncStoragePort, id).then((loaded) => {
       if (cancelled) return;
       setSettings(loaded);
-      setReady(true);
+      setLoadedFor(id);
     });
     return () => {
       cancelled = true;

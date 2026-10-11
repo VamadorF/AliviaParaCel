@@ -30,7 +30,7 @@ export function PreConsultBlock({ appointment, nowMs, submitting, onSubmit }: Pr
         testID="pre-consult-answers"
         style={[styles.block, { borderTopColor: palette.border }]}
       >
-        <Text style={[styles.kicker, { color: palette.primary }]}>PREPARACIÓN ENVIADA</Text>
+        <Text style={[styles.kicker, { color: palette.textPrimary }]}>PREPARACIÓN ENVIADA</Text>
         {preConsultParts(saved).map((part) => (
           <Text key={part.label} style={[styles.answer, { color: palette.text }]}>
             <Text style={styles.answerLabel}>{part.label}: </Text>
@@ -111,7 +111,7 @@ function PreConsultForm({
               </View>
               <Text
                 style={{
-                  color: selected ? palette.primary : palette.text,
+                  color: selected ? palette.textPrimary : palette.text,
                   fontWeight: selected ? '700' : '600',
                   fontSize: 15,
                   flex: 1,

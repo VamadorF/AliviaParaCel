@@ -10,7 +10,7 @@ import { ConsentBanner } from '@/features/patient/components/ConsentBanner';
 import { Field, OptionChip } from '@/features/patient/components/CheckinFields';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import { activeMedications } from '@/features/patient/utils/medications';
-import { painColor, painLabel } from '@/features/patient/utils/pain';
+import { painColor, painLabel, painTextColor } from '@/features/patient/utils/pain';
 import {
   buildQuickCheckIn,
   latestCheckIn,
@@ -27,7 +27,7 @@ function painText(value: number): string {
 }
 
 export function QuickCheckinScreen() {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<DiarioStackParamList>>();
   const { data, saveCheckIn } = usePatientSession();
   const medications = useMemo(() => activeMedications(data.medications), [data.medications]);
@@ -102,8 +102,8 @@ export function QuickCheckinScreen() {
       {draft.pain !== null ? (
         <View style={styles.painNow} accessibilityLiveRegion="polite">
           <PainFace value={draft.pain} size={48} />
-          <Text style={{ fontSize: 28, fontWeight: '800', color: painColor(draft.pain) }}>{painText(draft.pain)}</Text>
-          <Text style={{ color: painColor(draft.pain), fontWeight: '700' }}>{painLabel(draft.pain)}</Text>
+          <Text style={{ fontSize: 28, fontWeight: '800', color: painTextColor(draft.pain, mode) }}>{painText(draft.pain)}</Text>
+          <Text style={{ color: painTextColor(draft.pain, mode), fontWeight: '700' }}>{painLabel(draft.pain)}</Text>
         </View>
       ) : (
         <Text style={[styles.hint, { color: palette.textMuted }]}>Elige una cara.</Text>
@@ -111,7 +111,8 @@ export function QuickCheckinScreen() {
       <View style={styles.faces}>
         {EVA_FACES.map((face) => {
           const selected = draft.pain === face.num;
-          const color = selected ? painColor(face.num) : palette.text;
+          const iconColor = selected ? painColor(face.num) : palette.textMuted;
+          const labelColor = selected ? painTextColor(face.num, mode) : palette.textMuted;
           return (
             <Pressable
               key={face.num}
@@ -129,8 +130,8 @@ export function QuickCheckinScreen() {
                 },
               ]}
             >
-              <PainFace value={face.num} size={28} color={color} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color }}>{face.num}</Text>
+              <PainFace value={face.num} size={28} color={iconColor} />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: labelColor }}>{face.num}</Text>
             </Pressable>
           );
         })}
@@ -163,7 +164,7 @@ export function QuickCheckinScreen() {
       ) : null}
 
       {missing.length > 0 ? (
-        <Text style={{ color: palette.danger, marginTop: 12 }} accessibilityLiveRegion="polite" testID="quick-falta">
+        <Text style={{ color: palette.textDanger, marginTop: 12 }} accessibilityLiveRegion="polite" testID="quick-falta">
           Falta: {missing.join(', ')}.
           {draft.pain === null ? ' Elige una cara o usa tu último registro.' : ' Completa el motivo y qué pasó.'}
         </Text>

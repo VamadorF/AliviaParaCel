@@ -33,7 +33,7 @@ export function PainChart({
   values,
   height = 168,
   gridColor = '#e7ebe7',
-  labelColor = '#8a9790',
+  labelColor = '#5c6a64',
 }: PainChartProps) {
   const [width, setWidth] = useState(0);
   const gradId = useId().replace(/:/g, '');

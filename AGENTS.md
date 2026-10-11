@@ -62,6 +62,8 @@ Leer también `.cursor/skills/alivia-movil/SKILL.md`, `PRODUCT.md` y `DESIGN.md`
 
 - Consentimiento (MOB-06, paridad PAC-02 web): `PatientBootstrap.consent` / `consentHistory` persisten con fecha real y versión (`CONSENT_VERSION` en `utils/consent.ts`, espejo de la web). Sin registro = aceptado, sin fecha. Con consentimiento revocado el repositorio marca el check-in `sharedWithTeam: false` (solo en el teléfono, rotulado "No compartido con tu equipo"); ausente = compartido.
 
+- Cambio de tokens de contraste aprobado por el PO el 2026-10-10 (DECISIONES_PO.md D-01).
+
 ## Estructura
 
 - `src/features/patient/` — Diario, check-in, AlivIA, Comunidad

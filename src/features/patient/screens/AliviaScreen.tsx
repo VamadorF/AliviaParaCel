@@ -156,7 +156,7 @@ export function AliviaScreen() {
                 { backgroundColor: selected ? palette.primary : 'transparent', opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <Text style={{ fontSize: 15, fontWeight: '800', color: selected ? '#ffffff' : palette.text }}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: selected ? palette.onPrimary : palette.text }}>
                 {s.label}
               </Text>
             </Pressable>
@@ -200,7 +200,7 @@ export function AliviaScreen() {
             onPress={call131}
             style={({ pressed }) => [styles.noticeLink, { opacity: pressed ? 0.8 : 1 }]}
           >
-            <Text style={{ color: palette.danger, fontWeight: '800', fontSize: 15, lineHeight: 21 }}>
+            <Text style={{ color: palette.textDanger, fontWeight: '800', fontSize: 15, lineHeight: 21 }}>
               {EMERGENCY_NOTICE}
             </Text>
           </Pressable>
@@ -237,7 +237,7 @@ export function AliviaScreen() {
               { borderColor: palette.primary, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={{ color: palette.primary, fontWeight: '800', fontSize: 15 }}>Ir al Asistente</Text>
+            <Text style={{ color: palette.textPrimary, fontWeight: '800', fontSize: 15 }}>Ir al Asistente</Text>
           </Pressable>
         </View>
       ) : (
@@ -310,7 +310,7 @@ export function AliviaScreen() {
                         onPress={call131}
                         style={({ pressed }) => [styles.call131, { opacity: pressed ? 0.8 : 1 }]}
                       >
-                        <Text style={{ color: palette.danger, fontWeight: '800' }}>Llamar al 131</Text>
+                        <Text style={{ color: palette.textDanger, fontWeight: '800' }}>Llamar al 131</Text>
                       </Pressable>
                     ) : null}
                   </View>
@@ -323,7 +323,7 @@ export function AliviaScreen() {
               {summaryNotice ? (
                 <Text
                   accessibilityLiveRegion="polite"
-                  style={{ color: palette.primary, fontWeight: '700', marginBottom: 8 }}
+                  style={{ color: palette.textPrimary, fontWeight: '700', marginBottom: 8 }}
                 >
                   {summaryNotice}
                 </Text>
@@ -337,7 +337,7 @@ export function AliviaScreen() {
                   { borderColor: palette.primary, opacity: pressed ? 0.8 : 1 },
                 ]}
               >
-                <Text style={{ color: palette.primary, fontWeight: '800', fontSize: 15 }}>
+                <Text style={{ color: palette.textPrimary, fontWeight: '800', fontSize: 15 }}>
                   Enviar resumen a mi médico
                 </Text>
               </Pressable>

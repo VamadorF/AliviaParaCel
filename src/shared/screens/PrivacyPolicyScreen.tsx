@@ -17,7 +17,7 @@ export function PrivacyPolicyScreen() {
     <Screen>
       <Text
         testID="privacy-draft"
-        style={[styles.draft, { color: palette.warning, backgroundColor: palette.surface, borderColor: palette.border }]}
+        style={[styles.draft, { color: palette.textWarning, backgroundColor: palette.surface, borderColor: palette.border }]}
       >
         {PRIVACY_POLICY_DRAFT}
       </Text>
@@ -28,7 +28,7 @@ export function PrivacyPolicyScreen() {
       >
         {PRIVACY_POLICY_TITLE}
       </Text>
-      <Text testID="privacy-version" style={[styles.version, { color: palette.primary }]}>
+      <Text testID="privacy-version" style={[styles.version, { color: palette.textPrimary }]}>
         Versión {PRIVACY_POLICY_VERSION}
       </Text>
       <Text style={[styles.body, { color: palette.textMuted }]}>{PRIVACY_POLICY_INTRO}</Text>
