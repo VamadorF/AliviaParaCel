@@ -71,6 +71,30 @@ export type CheckInRecord = {
    * comparte con el equipo. Ausente = compartido (registros anteriores a MOB-06).
    */
   sharedWithTeam?: boolean;
+  /** MOB-16 · Idempotencia del envío. El mismo id no se vuelve a escribir. */
+  clientRequestId?: string;
+  /** MOB-16 · Ausente = ya está en el repositorio. `pending` solo vive en la cola visible. */
+  syncStatus?: 'pending';
+  /** MOB-17 · Check-in rápido. Ausente = registro por pasos. */
+  quick?: boolean;
+};
+
+/** PAC-10 · PGIC: 1 = muchísimo mejor … 4 = sin cambios … 7 = muchísimo peor. */
+export type PgicValue = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/** Una preparación por consulta. No es un registro diario. */
+export type PreConsult = {
+  appointmentId: string;
+  topics: string;
+  pgic: PgicValue;
+  functionalGoal: string;
+  answeredAt: string;
+};
+
+export type PreConsultInput = {
+  topics: string;
+  pgic: PgicValue | null;
+  functionalGoal: string;
 };
 
 export type Appointment = {
@@ -79,11 +103,21 @@ export type Appointment = {
   doctorName: string;
   reason?: string;
   status: 'Pendiente' | 'Confirmada';
+  /** Ausente o null: el paciente no respondió. La consulta sigue igual. */
+  preConsult?: PreConsult | null;
 };
 
 export type TeamInstruction = {
+  /** Id de la instrucción vigente. En la web es el id de la alerta. */
+  id: number;
   text: string;
   date: string;
+};
+
+/** PAC-08 · Acuse de lectura. El celular no tiene ficha de médico: queda en el mock del paciente. */
+export type InstructionAck = {
+  alertId: number;
+  readAt: string;
 };
 
 export type Message = {
@@ -91,6 +125,10 @@ export type Message = {
   from: 'patient' | 'team' | 'alivia';
   body: string;
   at: string;
+  /** MOB-10 · Canal explícito. Ausente en mensajes anteriores: se infiere por `from`. */
+  channel?: 'assistant' | 'team';
+  /** MOB-16 · Ausente = ya está en el repositorio. */
+  syncStatus?: 'pending';
 };
 
 export type ForumPost = {
@@ -98,6 +136,24 @@ export type ForumPost = {
   author: string;
   excerpt: string;
   at: string;
+  /** MOB-11 · Ausente o null: tema. Si tiene id, es una respuesta a ese tema. */
+  parentId?: string | null;
+  /** COM-01 · Ausente = visible. true = ocultada; en el móvil se marca en el fixture o con hideCommunityPost. */
+  hidden?: boolean;
+  /** COM-01 · Reportes recibidos. Ausente = ninguno. */
+  reportCount?: number;
+  /** COM-06 · Ausente = visible para la comunidad. `en_revision` solo la ve quien la escribió. */
+  review?: 'en_revision';
+};
+
+/** COM-01 · Misma forma que ForumReportRow de la web. La cola de moderación no vive en el móvil. */
+export type ForumReport = {
+  id: string;
+  postId: string;
+  reporterRut: string;
+  reason: string;
+  status: 'abierto' | 'resuelto';
+  createdAt: string;
 };
 
 /** MOB-06 · Misma forma que ConsentState / ConsentEventRow de la web (PAC-02), sin RUT: el bootstrap ya es del paciente. */
@@ -118,17 +174,74 @@ export type ConsentEvent = {
   createdAt: string;
 };
 
+/** MOB-19 · Clínica del paciente en los fixtures. Sin teléfono, el centro no se muestra. */
+export type PatientClinic = {
+  name: string;
+  phone?: string | null;
+};
+
+/** MOB-07 · Médico del equipo. `expiresAt` solo si el vínculo es temporal. */
+export type CareTeamMember = {
+  id: string;
+  name: string;
+  specialty: string;
+  /** ISO 8601. Ausente o null: vínculo permanente, sin fecha de término. */
+  expiresAt?: string | null;
+  /**
+   * CLI-08 · El médico aceptó sumarse. El perfil avisa mientras el vínculo siga vigente.
+   * Ausente: ya estaba en el equipo y no se muestra el aviso de ingreso.
+   */
+  newlyAccepted?: true;
+};
+
+export type LinkRequestStatus = 'Pendiente' | 'Aprobado' | 'Rechazado';
+
+/** MOB-07 · Solicitud de vinculación. Misma decisión que la web: Aprobado o Rechazado. */
+export type LinkRequest = {
+  id: string;
+  requesterName: string;
+  requesterRut: string;
+  requesterRole: 'medico' | 'organizacion';
+  specialty?: string;
+  status: LinkRequestStatus;
+  createdAt: string;
+  /** Si se aprueba y el acceso es temporal, el equipo queda con esta fecha. */
+  expiresAt?: string | null;
+};
+
 export type PatientBootstrap = {
   medications: Medication[];
   checkIns: CheckInRecord[];
   appointment: Appointment | null;
   instruction: TeamInstruction | null;
+  /** PAC-08 · Acuses ya registrados. Ausente = ninguna instrucción leída. */
+  instructionAcks?: InstructionAck[];
   messages: Message[];
   posts: ForumPost[];
+  /** COM-01 · Ausente = ningún reporte. */
+  forumReports?: ForumReport[];
   messagingEnabled: boolean;
   doctorLinked: boolean;
+  /** MOB-19 · Ausente o sin teléfono: no se muestra el teléfono del centro. */
+  clinic?: PatientClinic | null;
   /** MOB-06 · Opcional: sin registro se asume aceptado, sin fecha (nunca se inventa una). */
   consent?: ConsentState;
   /** MOB-06 · Historial append-only, del más reciente al más antiguo. */
   consentHistory?: ConsentEvent[];
+  /** MOB-07 · Patología de la ficha. Ausente o null: el paciente nuevo no tiene. */
+  pathology?: string | null;
+  /** MOB-07 · Correo editable. El RUT y el nombre viven en la cuenta y no se editan aquí. */
+  email?: string;
+  phone?: string;
+  /** MOB-07 · URI local de la foto. No es una URL de servidor. */
+  photoUri?: string | null;
+  /** MOB-07 · Equipo tratante. Ausente = ninguno. */
+  team?: CareTeamMember[];
+  /** MOB-07 · Solicitudes de vinculación. Ausente = ninguna. */
+  linkRequests?: LinkRequest[];
+  /**
+   * PAC-15 · Ausente = cuenta vigente. Si está, la ficha quedó solo lectura.
+   * El texto es "Cuenta del paciente eliminada".
+   */
+  readOnlyReason?: string;
 };

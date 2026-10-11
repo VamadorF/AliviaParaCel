@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DiarioNavigator } from '@/app/navigation/DiarioNavigator';
 import { AliviaScreen } from '@/features/patient/screens/AliviaScreen';
 import { ComunidadScreen } from '@/features/patient/screens/ComunidadScreen';
-import { PatientProfileScreen } from '@/features/patient/screens/PatientProfileScreen';
+import { PerfilNavigator } from '@/app/navigation/PerfilNavigator';
 import { AppIcon, type IconName } from '@/shared/icons/AppIcon';
 import type { MainTabParamList } from '@/shared/types/navigation';
 import { useTheme } from '@/shared/theme/ThemeContext';
@@ -30,7 +30,7 @@ export function MainTabs() {
           borderTopColor: palette.border,
           minHeight: 56,
         },
-        tabBarActiveTintColor: palette.primary,
+        tabBarActiveTintColor: palette.textPrimary,
         tabBarInactiveTintColor: palette.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
       }}
@@ -52,7 +52,7 @@ export function MainTabs() {
       />
       <Tab.Screen
         name="Perfil"
-        component={PatientProfileScreen}
+        component={PerfilNavigator}
         options={{ title: 'Perfil', headerShown: false, tabBarIcon: tabIcon('person') }}
       />
     </Tab.Navigator>

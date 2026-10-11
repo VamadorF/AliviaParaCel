@@ -1,10 +1,21 @@
-import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useAuth } from '@/app/providers/AuthProvider';
+import {
+  EMERGENCY_NOTICE,
+  NO_MEDICAL_ADVICE_NOTICE,
+  assistantBubble,
+  assistantContextFrom,
+  assistantReply,
+  getAssistantMode,
+  saveAiSummaryNote,
+} from '@/features/patient/assistant/assistant';
+import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
+import type { Message } from '@/features/patient/types';
+import { teamHeadline } from '@/features/patient/utils/profile';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Screen } from '@/shared/components/Screen';
 import { AppIcon, IconTile } from '@/shared/icons/AppIcon';
-import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
-import type { Message } from '@/features/patient/types';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 type Channel = 'assistant' | 'team';
@@ -16,26 +27,55 @@ const SEGMENTS: { key: Channel; label: string }[] = [
 
 const ASSISTANT_GREEN = '#2f8f63';
 
+function call131() {
+  Linking.openURL('tel:131').catch(() => {});
+}
+
+function placeBaseMessage(message: Message): Channel | 'patient' {
+  if (message.channel === 'assistant' || message.channel === 'team') return message.channel;
+  if (message.from === 'alivia') return 'assistant';
+  if (message.from === 'team') return 'team';
+  return 'patient';
+}
+
 export function AliviaScreen() {
   const { palette } = useTheme();
-  const { data } = usePatientSession();
+  const { user } = useAuth();
+  const { data, sendTeamMessage } = usePatientSession();
   const [channel, setChannel] = useState<Channel>('assistant');
   const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [sent, setSent] = useState<Record<Channel, Message[]>>({ assistant: [], team: [] });
+  const [summaryNotice, setSummaryNotice] = useState<string | null>(null);
+
+  const assistantCtx = useMemo(
+    () => assistantContextFrom({ name: user?.name, checkIns: data.checkIns }),
+    [user?.name, data.checkIns],
+  );
 
   const teamAvailable = data.doctorLinked && data.messagingEnabled;
   const doctorName = data.appointment?.doctorName ?? null;
+  const teamLine = teamHeadline(data.team);
+  const linkedLabel = teamLine
+    ? teamLine
+    : data.doctorLinked
+      ? doctorName
+        ? `Médico vinculado: ${doctorName}`
+        : 'Médico vinculado'
+      : 'Sin médico vinculado';
 
-  // Los mensajes del paciente enviados en esta sesión se guardan por canal;
-  // los mensajes base se separan por emisor (alivia → asistente, team → equipo).
+  // El asistente sigue en esta sesión (MOB-09). El equipo persiste (MOB-10); sin red queda en la cola (MOB-16).
   const messages = useMemo(() => {
-    const base = data.messages;
-    const byChannel: Record<Channel, Message[]> = {
-      assistant: base.filter((m) => m.from === 'alivia'),
-      team: base.filter((m) => m.from === 'team'),
-    };
-    const patientBase = base.filter((m) => m.from === 'patient');
-    byChannel[teamAvailable && byChannel.team.length > 0 ? 'team' : 'assistant'].push(...patientBase);
+    const byChannel: Record<Channel, Message[]> = { assistant: [], team: [] };
+    const unscopedPatient: Message[] = [];
+    for (const message of data.messages) {
+      const place = placeBaseMessage(message);
+      if (place === 'patient') unscopedPatient.push(message);
+      else byChannel[place].push(message);
+    }
+    const legacy = teamAvailable && byChannel.team.length > 0 ? 'team' : 'assistant';
+    byChannel[legacy].push(...unscopedPatient);
     const merge = (c: Channel) =>
       [...byChannel[c], ...sent[c]].sort((a, b) => a.at.localeCompare(b.at));
     return { assistant: merge('assistant'), team: merge('team') };
@@ -46,15 +86,46 @@ export function AliviaScreen() {
 
   const send = () => {
     const body = draft.trim();
-    if (!body) return;
-    setSent((prev) => ({
-      ...prev,
-      [channel]: [
-        ...prev[channel],
-        { id: `m-${Date.now()}`, from: 'patient', body, at: new Date().toISOString() },
-      ],
-    }));
-    setDraft('');
+    if (!body || sendingRef.current) return;
+    const at = new Date();
+    if (channel === 'assistant') {
+      const reply = assistantReply(body, assistantCtx, getAssistantMode());
+      if (!reply) return;
+      setSent((prev) => ({
+        ...prev,
+        assistant: [
+          ...prev.assistant,
+          { id: `m-${at.getTime()}`, from: 'patient', body, at: at.toISOString() },
+          {
+            id: `a-${at.getTime()}`,
+            from: 'alivia',
+            body: reply,
+            at: new Date(at.getTime() + 1).toISOString(),
+          },
+        ],
+      }));
+      setDraft('');
+      return;
+    }
+    sendingRef.current = true;
+    setSending(true);
+    void sendTeamMessage(body, at.toISOString())
+      .then((status) => {
+        if (status === 'empty') return;
+        setDraft('');
+      })
+      .finally(() => {
+        sendingRef.current = false;
+        setSending(false);
+      });
+  };
+
+  const patientWrote = messages.assistant.some((m) => m.from === 'patient');
+
+  const sendSummary = () => {
+    const lines = messages.assistant.filter((m) => m.from === 'patient').map((m) => m.body);
+    saveAiSummaryNote(user?.id ?? 'local', assistantCtx, lines);
+    setSummaryNotice('Resumen enviado a tu médico');
   };
 
   return (
@@ -85,7 +156,7 @@ export function AliviaScreen() {
                 { backgroundColor: selected ? palette.primary : 'transparent', opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <Text style={{ fontSize: 15, fontWeight: '800', color: selected ? '#ffffff' : palette.text }}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: selected ? palette.onPrimary : palette.text }}>
                 {s.label}
               </Text>
             </Pressable>
@@ -115,15 +186,29 @@ export function AliviaScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '800', color: palette.text }}>Mi equipo</Text>
             <Text style={{ color: palette.textMuted, fontSize: 13, fontWeight: '600', marginTop: 2 }}>
-              {data.doctorLinked
-                ? doctorName
-                  ? `Médico vinculado: ${doctorName}`
-                  : 'Médico vinculado'
-                : 'Sin médico vinculado'}
+              {linkedLabel}
             </Text>
           </View>
         </View>
       )}
+
+      {channel === 'assistant' ? (
+        <View style={styles.notice}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={EMERGENCY_NOTICE}
+            onPress={call131}
+            style={({ pressed }) => [styles.noticeLink, { opacity: pressed ? 0.8 : 1 }]}
+          >
+            <Text style={{ color: palette.textDanger, fontWeight: '800', fontSize: 15, lineHeight: 21 }}>
+              {EMERGENCY_NOTICE}
+            </Text>
+          </Pressable>
+          <Text style={{ color: palette.textMuted, fontSize: 13, fontWeight: '600', lineHeight: 18 }}>
+            {NO_MEDICAL_ADVICE_NOTICE}
+          </Text>
+        </View>
+      ) : null}
 
       {showLock ? (
         <View style={styles.locked}>
@@ -152,7 +237,7 @@ export function AliviaScreen() {
               { borderColor: palette.primary, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={{ color: palette.primary, fontWeight: '800', fontSize: 15 }}>Ir al Asistente</Text>
+            <Text style={{ color: palette.textPrimary, fontWeight: '800', fontSize: 15 }}>Ir al Asistente</Text>
           </Pressable>
         </View>
       ) : (
@@ -169,39 +254,95 @@ export function AliviaScreen() {
                   : 'Aún no hay mensajes con tu equipo. Escribe el primero.'}
               </Text>
             }
-            renderItem={({ item }) => (
-              <View
-                style={[
-                  styles.bubbleRow,
-                  { justifyContent: item.from === 'patient' ? 'flex-end' : 'flex-start' },
-                ]}
-              >
-                {item.from !== 'patient' ? (
-                  <IconTile
-                    name={item.from === 'alivia' ? 'spark' : 'person'}
-                    color={item.from === 'alivia' ? '#ffffff' : palette.accent}
-                    background={item.from === 'alivia' ? ASSISTANT_GREEN : palette.accentSoft}
-                    size={32}
-                    iconSize={16}
-                  />
-                ) : null}
+            renderItem={({ item }) => {
+              const simulated = item.from === 'alivia' ? assistantBubble(item.body) : null;
+              return (
                 <View
                   style={[
-                    styles.bubble,
-                    {
-                      backgroundColor: item.from === 'patient' ? palette.primarySoft : palette.surface,
-                      borderColor: palette.border,
-                    },
+                    styles.bubbleRow,
+                    { justifyContent: item.from === 'patient' ? 'flex-end' : 'flex-start' },
                   ]}
                 >
-                  <Text style={{ fontSize: 12, color: palette.textMuted, marginBottom: 4 }}>
-                    {item.from === 'patient' ? 'Tú' : item.from === 'team' ? 'Tu equipo' : 'AlivIA'}
-                  </Text>
-                  <Text style={{ color: palette.text, lineHeight: 21 }}>{item.body}</Text>
+                  {item.from !== 'patient' ? (
+                    <IconTile
+                      name={item.from === 'alivia' ? 'spark' : 'person'}
+                      color={item.from === 'alivia' ? '#ffffff' : palette.accent}
+                      background={item.from === 'alivia' ? ASSISTANT_GREEN : palette.accentSoft}
+                      size={32}
+                      iconSize={16}
+                    />
+                  ) : null}
+                  <View
+                    style={[
+                      styles.bubble,
+                      {
+                        backgroundColor: item.from === 'patient' ? palette.primarySoft : palette.surface,
+                        borderColor: palette.border,
+                      },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 12, color: palette.textMuted, marginBottom: 4 }}>
+                      {item.from === 'patient' ? 'Tú' : item.from === 'team' ? 'Tu equipo' : 'Asistente AlivIA'}
+                    </Text>
+                    {simulated ? (
+                      <Text
+                        accessibilityLabel={simulated.label}
+                        style={[styles.simLabel, { color: palette.textMuted }]}
+                      >
+                        {simulated.label}
+                      </Text>
+                    ) : null}
+                    <Text style={{ color: palette.text, lineHeight: 21 }}>
+                      {simulated ? simulated.text : item.body}
+                    </Text>
+                    {item.syncStatus === 'pending' ? (
+                      <Text
+                        style={{ color: palette.textMuted, fontSize: 12, fontWeight: '800', marginTop: 6 }}
+                        testID={`message-pending-${item.id}`}
+                      >
+                        pendiente de envío
+                      </Text>
+                    ) : null}
+                    {simulated?.unavailable ? (
+                      <Pressable
+                        accessibilityRole="link"
+                        accessibilityLabel="Llamar al 131"
+                        onPress={call131}
+                        style={({ pressed }) => [styles.call131, { opacity: pressed ? 0.8 : 1 }]}
+                      >
+                        <Text style={{ color: palette.textDanger, fontWeight: '800' }}>Llamar al 131</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
-            )}
+              );
+            }}
           />
+          {channel === 'assistant' && patientWrote ? (
+            <View style={styles.summaryBox}>
+              {summaryNotice ? (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={{ color: palette.textPrimary, fontWeight: '700', marginBottom: 8 }}
+                >
+                  {summaryNotice}
+                </Text>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Enviar resumen a mi médico"
+                onPress={sendSummary}
+                style={({ pressed }) => [
+                  styles.summaryBtn,
+                  { borderColor: palette.primary, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <Text style={{ color: palette.textPrimary, fontWeight: '800', fontSize: 15 }}>
+                  Enviar resumen a mi médico
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           <View style={styles.composer}>
             <TextInput
               style={[
@@ -219,11 +360,12 @@ export function AliviaScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Enviar"
-              accessibilityState={{ disabled: !draft.trim() }}
+              accessibilityState={{ disabled: !draft.trim() || sending }}
+              disabled={!draft.trim() || sending}
               onPress={send}
               style={({ pressed }) => [
                 styles.send,
-                { opacity: !draft.trim() ? 0.5 : pressed ? 0.8 : 1 },
+                { opacity: !draft.trim() || sending ? 0.5 : pressed ? 0.8 : 1 },
               ]}
             >
               <AppIcon name="send" size={18} color="#ffffff" />
@@ -261,6 +403,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     marginBottom: 12,
+  },
+  notice: { marginBottom: 12, gap: 4 },
+  noticeLink: { minHeight: 48, justifyContent: 'center' },
+  simLabel: { fontSize: 11, fontWeight: '800', marginBottom: 4 },
+  call131: { minHeight: 48, justifyContent: 'center' },
+  summaryBox: { marginBottom: 8 },
+  summaryBtn: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   locked: { alignItems: 'center', gap: 12, paddingVertical: 28, paddingHorizontal: 12 },
   lockedTitle: { fontSize: 16, fontWeight: '800', textAlign: 'center' },

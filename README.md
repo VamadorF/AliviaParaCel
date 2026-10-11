@@ -33,25 +33,48 @@ Detalle completo en [PRODUCT.md](./PRODUCT.md) y [DESIGN.md](./DESIGN.md).
 
 ## Qué incluye la beta
 
-- **Ingreso por RUT** (validado) o modo demo.
+- **Ingreso por RUT y contraseña** (validados contra los fixtures) o modo demo.
 - Cuatro pestañas: **Diario**, **AlivIA**, **Comunidad** y **Perfil**.
 - **Check-in en 7 pasos** desde Diario.
 - Datos de prueba editables en `src/shared/mocks/`.
 
 ### Usuarios de prueba
 
-| Perfil | RUT | Para qué sirve |
-| --- | --- | --- |
-| Demo (Constanza) | `9.876.543-3` o botón "Entrar en modo demo" | Ver la app con historial y datos de ejemplo |
-| Paciente nuevo | `15.234.678-6` | Ver la experiencia de alguien sin registros |
+Definidas en `src/shared/mocks/users.mock.ts`. El formulario de ingreso también las muestra bajo los campos.
+
+| Perfil | RUT | Contraseña | Para qué sirve |
+| --- | --- | --- | --- |
+| Constanza Elizondo (demo) | `9.876.543-3` | `alivia-demo` | Ver la app con historial y datos de ejemplo |
+| María López (nueva) | `15.234.678-6` | `alivia-nueva` | Ver la experiencia de alguien sin registros |
+| Botón **Entrar en modo demo** | — | no pide contraseña | Entra como Constanza |
+
+Cerrar sesión borra el token del dispositivo (`alivia.auth.token`): al reabrir la app no queda la sesión ni los datos en pantalla de quien salió. El bootstrap guardado sigue en el teléfono.
+
+### Restablecer datos
+
+Con Constanza, en **Perfil**, el botón **Restablecer datos demo** vuelve el bootstrap al fixture de `src/shared/mocks/patient.mock.ts` (check-ins, mensajes, comunidad, medicamentos y cita). La clave en AsyncStorage es `@alivia/patient-bootstrap/v1/constanza`.
+
+El botón aparece solo con el perfil demo (Constanza). Para volver al fixture limpio de María, borra `@alivia/patient-bootstrap/v1/nuevo`: al entrar de nuevo el repositorio siembra otra vez. En el teléfono, borrar los datos de la app en Expo Go; en la versión web, borrar esa clave de `localStorage`.
+
+Ese botón no vacía la cola sin red (`@alivia/outbox/v1/`) ni los recordatorios (`@alivia/reminders/v1/`).
+
+### Fallas de prueba
+
+El código no permite inyectar fallas: no hay interruptor de error ni de latencia. El login espera 800 ms y la lectura de datos del paciente 600 ms, fijos en `src/app/config/constants.ts` (`MOCK_LOGIN_DELAY_MS`, `MOCK_PATIENT_DELAY_MS`).
+
+### Modo api
+
+Hoy solo hay mock.
 
 ### Fuera de alcance por ahora
 
 Conexión real a la API de AlivIACare (Prisma), vistas de médico, clínica y administración, exportación FHIR/PDF, integración con OpenAI y publicación en tiendas (EAS production).
 
-## Cómo ejecutarla
+## Cómo ejecutarla (modo mock)
 
-Requisitos: Node.js y npm. Para probar en el teléfono, la app **[Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent)** (SDK 57, la de Play Store). La SDK 58 sigue en beta y no se usa.
+Estos comandos levantan el mock local. Es el único modo de la app: Expo **SDK 57** (`expo` ^57 en `package.json`, React Native 0.86).
+
+Requisitos: Node.js y npm. Para probar en el teléfono, la app **[Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent)** de Play Store, la que corresponde a SDK 57. La SDK 58 sigue en beta y no se usa.
 
 ```bash
 npm install
@@ -90,7 +113,7 @@ En la terminal de Metro, `w` abre la versión web. Evita la tecla `a`: si Expo G
 src/
   app/          navegación (tabs, stacks), providers y configuración
   features/
-    auth/       login por RUT y modo demo
+    auth/       login por RUT, contraseña y modo demo
     patient/    Diario, check-in, AlivIA, Comunidad; api/ con los mocks
     profile/    perfil del paciente
   shared/       componentes, tema de colores, validación de RUT, mocks
@@ -98,13 +121,12 @@ tests/e2e/      pruebas Playwright
 scripts/        utilidades de desarrollo (Metro, adb, Expo Go)
 ```
 
-Cada `src/features/*/api/` es el punto donde los mocks se reemplazarán por llamadas reales a AlivIACare.
+Cada `src/features/*/api/` exporta el mock (`createMockAuthRepository`, `createMockPatientRepository`). Hoy solo hay mock.
 
 ## Próximos pasos
 
-1. Conectar la API de AlivIACare (autenticación por RUT y check-ins reales).
-2. Persistencia local y uso sin conexión para registrar aunque no haya señal.
-3. Builds de desarrollo y producción con EAS.
+1. Conectar la API de AlivIACare (autenticación por RUT y check-ins reales). Hoy solo hay mock.
+2. Builds de desarrollo y producción con EAS.
 
 ## Para colaboradores y agentes de IA
 

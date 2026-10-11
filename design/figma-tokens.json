@@ -1,6 +1,6 @@
 {
   "$metadata": {
-    "tokenSetOrder": ["alivia/mobile/light"],
+    "tokenSetOrder": ["alivia/mobile/light", "alivia/mobile/dark"],
     "figmaFile": "Pega aquí la URL del archivo Figma del equipo"
   },
   "alivia/mobile/light": {
@@ -10,7 +10,12 @@
       "primary": { "value": "#256e4d", "type": "color" },
       "primarySoft": { "value": "#e6f2ec", "type": "color" },
       "text": { "value": "#16211c", "type": "color" },
-      "textMuted": { "value": "#71807a", "type": "color" },
+      "textMuted": { "value": "#5c6a64", "type": "color" },
+      "textPrimary": { "value": "#256e4d", "type": "color" },
+      "textWarning": { "value": "#995a17", "type": "color" },
+      "textDanger": { "value": "#b03a44", "type": "color" },
+      "textAccent": { "value": "#4f5bc0", "type": "color" },
+      "onPrimary": { "value": "#ffffff", "type": "color" },
       "border": { "value": "#e7ebe7", "type": "color" },
       "danger": { "value": "#b03a44", "type": "color" },
       "warning": { "value": "#e08a2f", "type": "color" },
@@ -37,6 +42,26 @@
       "title": { "value": "800", "type": "number" },
       "body": { "value": "600", "type": "number" },
       "meta": { "value": "700", "type": "number" }
+    }
+  },
+  "alivia/mobile/dark": {
+    "color": {
+      "background": { "value": "#1a211e", "type": "color" },
+      "surface": { "value": "#243028", "type": "color" },
+      "primary": { "value": "#3d9a6f", "type": "color" },
+      "primarySoft": { "value": "#2a4034", "type": "color" },
+      "text": { "value": "#eef1ec", "type": "color" },
+      "textMuted": { "value": "#a8b4ae", "type": "color" },
+      "textPrimary": { "value": "#5abe90", "type": "color" },
+      "textWarning": { "value": "#e8a55a", "type": "color" },
+      "textDanger": { "value": "#e7969e", "type": "color" },
+      "textAccent": { "value": "#aab2ee", "type": "color" },
+      "onPrimary": { "value": "#16211c", "type": "color" },
+      "border": { "value": "#3d4a42", "type": "color" },
+      "danger": { "value": "#e07a84", "type": "color" },
+      "warning": { "value": "#e8a55a", "type": "color" },
+      "accent": { "value": "#8b96e8", "type": "color" },
+      "accentSoft": { "value": "#2a3048", "type": "color" }
     }
   }
 }

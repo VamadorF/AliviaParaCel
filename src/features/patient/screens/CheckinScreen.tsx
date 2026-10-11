@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { Button } from '@/shared/components/Button';
 import { Chip } from '@/shared/components/Chip';
@@ -38,19 +38,25 @@ import {
   showReliefTriggerSteps,
   triggerOptions,
 } from '@/features/patient/utils/checkin-steps';
+import { moodChoices } from '@/shared/data/mood-options';
 import { OTHER_ID, RELIEF_LEVELS, RELIEF_LEVEL_LABEL, reliefLabel } from '@/shared/data/trigger-catalog';
 import type { Appetite, CheckinDraft } from '@/features/patient/utils/checkin';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
-import { painColor, painLabel } from '@/features/patient/utils/pain';
+import { painColor, painLabel, painTextColor } from '@/features/patient/utils/pain';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 const ZONES = ['Cabeza', 'Cuello', 'Hombro', 'Lumbar', 'Cadera', 'Rodilla', 'Otro'];
-const MOODS = ['Bien', 'Regular', 'Cansada', 'Ansiosa'];
-const SLEEP = ['< 5 h', '5–6 h', '6–7 h', '7+ h'];
+const SLEEP = ['< 5 h', '5–6 h', '6–7 h', '7+ h'] as const;
+const SLEEP_NAME: Record<(typeof SLEEP)[number], string> = {
+  '< 5 h': 'Sueño: menos de 5 horas',
+  '5–6 h': 'Sueño: 5 a 6 horas',
+  '6–7 h': 'Sueño: 6 a 7 horas',
+  '7+ h': 'Sueño: 7 horas o más',
+};
 const APPETITES: Appetite[] = ['normal', 'reducido', 'nulo'];
 
 export function CheckinScreen() {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const navigation = useNavigation();
   const { user } = useAuth();
   const { data, saveCheckIn } = usePatientSession();
@@ -71,8 +77,15 @@ export function CheckinScreen() {
   );
   const showAttribution = showReliefTriggerSteps({ pain: draft.pain, previousPain, firstOfDay });
   const flow = stepFlow(showAttribution);
-  const reliefOpts = useMemo(() => reliefOptions(), []);
-  const triggerOpts = useMemo(() => triggerOptions(), []);
+  const stepNumber = flow.indexOf(step) + 1;
+  const stepTotal = flow.length;
+  const stepAnnouncement = `Paso ${stepNumber} de ${stepTotal}`;
+  const pathology = data.pathology ?? '';
+  const reliefOpts = useMemo(() => reliefOptions(pathology), [pathology]);
+  const triggerOpts = useMemo(() => triggerOptions(pathology), [pathology]);
+  useEffect(() => {
+    AccessibilityInfo.announceForAccessibility(stepAnnouncement);
+  }, [stepAnnouncement]);
 
   const goNext = () => {
     if (blockers.length > 0) return;
@@ -112,9 +125,10 @@ export function CheckinScreen() {
     >
       <Text
         style={[styles.step, { color: palette.textMuted }]}
-        accessibilityLiveRegion="polite"
+        accessibilityRole="text"
+        accessibilityLabel={stepAnnouncement}
       >
-        Paso {flow.indexOf(step) + 1} de {flow.length}
+        {stepAnnouncement}
       </Text>
       <Text style={[styles.h1, { color: palette.text }]} accessibilityRole="header">
         Check-in diario
@@ -129,7 +143,7 @@ export function CheckinScreen() {
 
       {blockers.length > 0 ? (
         <Text
-          style={{ color: palette.danger, marginBottom: 12 }}
+          style={{ color: palette.textDanger, marginBottom: 12 }}
           accessibilityLiveRegion="polite"
           testID="checkin-falta"
         >
@@ -144,11 +158,13 @@ export function CheckinScreen() {
             <Chip
               label="No"
               selected={draft.emergency === false}
+              accessibilityLabel="Urgencias: No"
               onPress={() => update({ emergency: false, emergencyReason: '', emergencyDetail: '' })}
             />
             <Chip
               label="Sí"
               selected={draft.emergency === true}
+              accessibilityLabel="Urgencias: Sí"
               onPress={() => update({ emergency: true })}
             />
           </View>
@@ -179,11 +195,13 @@ export function CheckinScreen() {
             <Chip
               label="Yo"
               selected={draft.registrant === 'self'}
+              accessibilityLabel="Quién registra: Yo"
               onPress={() => update({ registrant: 'self' })}
             />
             <Chip
               label="Soy cuidador"
               selected={draft.registrant === 'caregiver'}
+              accessibilityLabel="Quién registra: Soy cuidador"
               onPress={() => update({ registrant: 'caregiver' })}
             />
           </View>
@@ -216,10 +234,10 @@ export function CheckinScreen() {
           <Text style={styles.label}>¿Cuánto dolor sientes ahora?</Text>
           <View style={styles.faceHero}>
             <PainFace value={draft.pain} size={84} />
-            <Text style={{ fontSize: 36, fontWeight: '800', color: painColor(draft.pain) }}>
+            <Text style={{ fontSize: 36, fontWeight: '800', color: painTextColor(draft.pain, mode) }}>
               {draft.pain}
             </Text>
-            <Text style={{ color: painColor(draft.pain), fontWeight: '700' }}>
+            <Text style={{ color: painTextColor(draft.pain, mode), fontWeight: '700' }}>
               {painLabel(draft.pain)}
             </Text>
           </View>
@@ -231,14 +249,15 @@ export function CheckinScreen() {
                   key={face.num}
                   accessibilityRole="button"
                   accessibilityLabel={`${face.label}, ${face.num}`}
+                  accessibilityState={{ selected }}
                   onPress={() => update({ pain: face.num })}
                   style={[
                     styles.faceBtn,
                     selected && { backgroundColor: palette.primarySoft },
                   ]}
                 >
-                  <PainFace value={face.num} size={28} color={selected ? painColor(face.num) : '#b8c4bd'} />
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: selected ? painColor(face.num) : '#b8c4bd' }}>
+                  <PainFace value={face.num} size={28} color={selected ? painColor(face.num) : palette.textMuted} />
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: selected ? painTextColor(face.num, mode) : palette.textMuted }}>
                     {face.num}
                   </Text>
                 </Pressable>
@@ -251,6 +270,7 @@ export function CheckinScreen() {
                 key={n}
                 label={String(n)}
                 selected={draft.pain === n}
+                accessibilityLabel={`Dolor ${n}, ${painLabel(n)}`}
                 onPress={() => update({ pain: n })}
               />
             ))}
@@ -291,7 +311,7 @@ export function CheckinScreen() {
         <View>
           <Text style={styles.label}>Ánimo</Text>
           <View style={styles.rowWrap}>
-            {MOODS.map((m) => (
+            {moodChoices(draft.mood).map((m) => (
               <Chip
                 key={m}
                 label={m}
@@ -314,6 +334,7 @@ export function CheckinScreen() {
                 key={s}
                 label={s}
                 selected={draft.sleep === s}
+                accessibilityLabel={SLEEP_NAME[s]}
                 onPress={() => update({ sleep: s })}
               />
             ))}

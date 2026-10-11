@@ -40,7 +40,7 @@ export function HomeScreen() {
           {t('home.title')}
         </Text>
         <View style={[styles.badge, { backgroundColor: palette.primary }]}>
-          <Text style={styles.badgeText}>{t('home.mockBadge')}</Text>
+          <Text style={[styles.badgeText, { color: palette.onPrimary }]}>{t('home.mockBadge')}</Text>
         </View>
       </View>
 
@@ -52,7 +52,7 @@ export function HomeScreen() {
             <Text style={[styles.city, { color: palette.text }]}>
               {data.city}, {data.country}
             </Text>
-            <Text style={[styles.temp, { color: palette.primary }]}>
+            <Text style={[styles.temp, { color: palette.textPrimary }]}>
               {CONDITION_EMOJI[data.condition]} {data.temperature}°
             </Text>
             <Text style={{ color: palette.textMuted }}>
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   heading: { fontSize: 22, fontWeight: '700' },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  badgeText: { fontSize: 12, fontWeight: '600' },
   loader: { marginTop: 40 },
   city: { fontSize: 20, fontWeight: '600' },
   temp: { fontSize: 36, fontWeight: '700', marginVertical: 8 },

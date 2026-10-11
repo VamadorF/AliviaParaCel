@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CLEAN_RUT, DEMO_RUT, MOCK_USERS } from '@/shared/mocks/users.mock';
 import { createMemoryStorage } from '@/shared/storage/storagePort';
 import { createMockPatientRepository } from '@/features/patient/api/mockPatientRepository';
+import { reminderStorageKey } from '@/features/patient/notifications/reminders';
+import { outboxStorageKey } from '@/features/patient/sync/outbox';
+import { ACCOUNT_DELETED_MARK, DELETED_POST_TEXT } from '@/features/patient/utils/profile';
 
 const demoUser = MOCK_USERS.find((u) => u.rut === DEMO_RUT)!;
 const cleanUser = MOCK_USERS.find((u) => u.rut === CLEAN_RUT)!;
@@ -95,6 +98,90 @@ describe('CAL-01 · mockPatientRepository (persistencia)', () => {
     const after = await patient.appendCheckIn(cleanUser.id, 'clean', { ...next.checkIns[0], id: 'compartido' });
     expect(after.checkIns[0].sharedWithTeam).toBe(true);
     expect(after.checkIns.find((c) => c.id === 'solo-local')?.sharedWithTeam).toBe(false);
+  });
+
+  it('MOB-07: aprobar una solicitud persiste y suma al equipo', async () => {
+    const storage = createMemoryStorage();
+    const patient = createMockPatientRepository({ storage, delayMs: 0 });
+    const before = await patient.loadBootstrap(demoUser.id, 'demo');
+    const pending = before.linkRequests?.find((request) => request.status === 'Pendiente');
+    expect(pending).toBeTruthy();
+
+    const next = await patient.decideLinkRequest(demoUser.id, 'demo', pending!.id, 'Aprobado');
+    expect(next.linkRequests?.find((request) => request.id === pending!.id)?.status).toBe('Aprobado');
+    expect(next.team?.find((member) => member.id === pending!.requesterRut)).toMatchObject({
+      name: pending!.requesterName,
+      expiresAt: pending!.expiresAt,
+    });
+
+    const reloaded = await createMockPatientRepository({ storage, delayMs: 0 }).loadBootstrap(
+      demoUser.id,
+      'demo',
+    );
+    expect(reloaded.linkRequests?.find((request) => request.id === pending!.id)?.status).toBe(
+      'Aprobado',
+    );
+    expect(reloaded.team?.some((member) => member.name === pending!.requesterName)).toBe(true);
+    expect(reloaded.checkIns.some((checkIn) => checkIn.id === 'c1')).toBe(true);
+  });
+
+  it('PAC-15: eliminar cuenta conserva la ficha y borra el chat del asistente', async () => {
+    const storage = createMemoryStorage();
+    const patient = createMockPatientRepository({ storage, delayMs: 0 });
+    await patient.appendCheckIn(demoUser.id, 'demo', {
+      id: 'no-borrar',
+      date: '2026-10-10',
+      time: '12:00',
+      pain: 3,
+      zones: ['Lumbar'],
+      emergency: false,
+      registrant: 'self',
+      doses: [],
+    });
+    await patient.setPhoto(demoUser.id, 'demo', 'file://foto');
+    await storage.setItem(reminderStorageKey(demoUser.id), '{"dailyEnabled":false}');
+    await storage.setItem(outboxStorageKey(demoUser.id), '[]');
+
+    const after = await patient.requestAccountDeletion(demoUser.id, 'demo');
+    expect(after.checkIns.some((checkIn) => checkIn.id === 'no-borrar')).toBe(true);
+    expect(after.checkIns.some((checkIn) => checkIn.id === 'c1')).toBe(true);
+    expect(after.medications.some((med) => med.id === 'm1')).toBe(true);
+    expect(after.pathology).toBe('Fibromialgia + Depresión');
+    expect(after.messages.some((message) => message.from === 'alivia')).toBe(false);
+    expect(after.messages.some((message) => message.from === 'team')).toBe(true);
+    expect(after.posts.find((post) => post.id === 'p3')?.excerpt).toBe(DELETED_POST_TEXT);
+    expect(after.photoUri).toBeNull();
+    expect(after.email).toBe('');
+    expect(after.consent?.status).toBe('revocado');
+    expect(after.readOnlyReason).toBe(ACCOUNT_DELETED_MARK);
+    expect(await storage.getItem(reminderStorageKey(demoUser.id))).toBeNull();
+    expect(await storage.getItem(outboxStorageKey(demoUser.id))).toBeNull();
+
+    const reloaded = await createMockPatientRepository({ storage, delayMs: 0 }).loadBootstrap(
+      demoUser.id,
+      'demo',
+    );
+    expect(reloaded.checkIns.some((checkIn) => checkIn.id === 'no-borrar')).toBe(true);
+    expect(reloaded.medications.some((med) => med.id === 'm1')).toBe(true);
+    expect(reloaded.messages.some((message) => message.from === 'alivia')).toBe(false);
+    expect(reloaded.messages.some((message) => message.from === 'team')).toBe(true);
+    expect(reloaded.readOnlyReason).toBe(ACCOUNT_DELETED_MARK);
+
+    const blocked = await createMockPatientRepository({ storage, delayMs: 0 }).appendCheckIn(
+      demoUser.id,
+      'demo',
+      {
+        id: 'despues',
+        date: '2026-10-11',
+        time: '09:00',
+        pain: 2,
+        zones: [],
+        emergency: false,
+        registrant: 'self',
+        doses: [],
+      },
+    );
+    expect(blocked.checkIns.some((checkIn) => checkIn.id === 'despues')).toBe(false);
   });
 
   it('reset demo vuelve al fixture', async () => {

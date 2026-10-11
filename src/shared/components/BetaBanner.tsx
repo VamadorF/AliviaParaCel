@@ -9,7 +9,7 @@ export function BetaBanner() {
       style={[styles.wrap, { backgroundColor: palette.primarySoft, borderColor: palette.border }]}
       accessibilityRole="text"
     >
-      <Text style={[styles.text, { color: palette.primary }]}>
+      <Text style={[styles.text, { color: palette.textPrimary }]}>
         BETA · datos de demostración
       </Text>
     </View>

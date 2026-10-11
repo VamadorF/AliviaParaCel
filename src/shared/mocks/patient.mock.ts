@@ -1,20 +1,35 @@
-import type { PatientBootstrap } from '@/features/patient/types';
+import type { Appointment, PatientBootstrap } from '@/features/patient/types';
 import { CATALOG_VERSION } from '@/shared/data/trigger-catalog';
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+function copyAppointment(appointment: Appointment | null): Appointment | null {
+  if (!appointment) return null;
+  if (!appointment.preConsult) return { ...appointment };
+  return { ...appointment, preConsult: { ...appointment.preConsult } };
+}
 
 export function cloneBootstrap(base: PatientBootstrap): PatientBootstrap {
   return {
     ...base,
     checkIns: [...base.checkIns],
     messages: [...base.messages],
-    posts: [...base.posts],
+    posts: base.posts.map((post) => ({ ...post })),
+    ...(base.forumReports
+      ? { forumReports: base.forumReports.map((report) => ({ ...report })) }
+      : {}),
     medications: [...base.medications],
-    appointment: base.appointment ? { ...base.appointment } : null,
-    instruction: base.instruction ? { ...base.instruction } : null,
+    appointment: copyAppointment(base.appointment),
+    instruction: base.instruction
+      ? { ...base.instruction, id: base.instruction.id > 0 ? base.instruction.id : 1 }
+      : null,
+    instructionAcks: base.instructionAcks?.map((ack) => ({ ...ack })),
     consent: base.consent ? { ...base.consent } : undefined,
     consentHistory: base.consentHistory ? [...base.consentHistory] : undefined,
+    clinic: base.clinic ? { ...base.clinic } : base.clinic,
+    team: base.team?.map((member) => ({ ...member })),
+    linkRequests: base.linkRequests?.map((request) => ({ ...request })),
   };
 }
 
@@ -103,6 +118,7 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
     status: 'Pendiente',
   },
   instruction: {
+    id: 1,
     text: 'Registra el dolor antes de tomar rescate. Si supera 7 por dos días, escríbenos por AlivIA.',
     date: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
@@ -122,6 +138,14 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
   ],
   posts: [
     {
+      id: 'p3',
+      author: 'Constanza E.',
+      excerpt: 'Caminé diez minutos después del almuerzo y el dolor bajó un poco.',
+      at: new Date(Date.now() - 86400000).toISOString(),
+      // Sin panel de admin: el fixture deja esta publicación ocultada para que Constanza la vea.
+      hidden: true,
+    },
+    {
       id: 'p1',
       author: 'Ana R.',
       excerpt: '¿Alguien usa compresas térmicas en la mañana? Me ayudó a bajar la rigidez.',
@@ -136,6 +160,42 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
   ],
   messagingEnabled: true,
   doctorLinked: true,
+  // Red de Constanza en los fixtures web: ALIVIAMVP (teléfono de esa clínica).
+  clinic: {
+    name: 'ALIVIAMVP',
+    phone: '+56 2 2555 0100',
+  },
+  // Misma ficha que la web: patología, contacto y los médicos ya vinculados (sin vencimiento).
+  // Dra. Invitada Soto acaba de aceptar (CLI-08). El vínculo es temporal: el perfil muestra la fecha.
+  pathology: 'Fibromialgia + Depresión',
+  email: 'constanza@correo.cl',
+  phone: '',
+  photoUri: null,
+  team: [
+    { id: '12345678-5', name: 'Dr. Jesús Fernández', specialty: 'Especialista en Dolor Crónico' },
+    { id: '13456789-9', name: 'Dra. Constanza Elizondo', specialty: 'Reumatología' },
+    {
+      id: '20333444-3',
+      name: 'Dra. Invitada Soto',
+      specialty: 'Neurología',
+      expiresAt: new Date(Date.now() + 18 * 86400000).toISOString(),
+      newlyAccepted: true,
+    },
+  ],
+  // La web siembra la bandeja vacía. Esta solicitud deja aprobar o rechazar en el mock.
+  // El vencimiento viene en el fixture: la pantalla solo lo muestra si está.
+  linkRequests: [
+    {
+      id: 'req-javier',
+      requesterName: 'Dr. Javier Fernández',
+      requesterRut: '15678234-3',
+      requesterRole: 'medico',
+      specialty: 'Algología',
+      status: 'Pendiente',
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+    },
+  ],
 };
 
 export const CLEAN_BOOTSTRAP: PatientBootstrap = {
@@ -154,4 +214,11 @@ export const CLEAN_BOOTSTRAP: PatientBootstrap = {
   ],
   messagingEnabled: false,
   doctorLinked: false,
+  // Paciente nuevo sin clínica en la red: no hay teléfono de centro.
+  pathology: null,
+  email: 'nuevo.paciente@test.cl',
+  phone: '',
+  photoUri: null,
+  team: [],
+  linkRequests: [],
 };
