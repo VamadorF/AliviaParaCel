@@ -73,3 +73,11 @@ Leer también `.cursor/skills/alivia-movil/SKILL.md`, `PRODUCT.md` y `DESIGN.md`
 - `src/features/*/api/` — mock local (`createMockAuthRepository`, `createMockPatientRepository`). Hoy solo hay mock
 
 Referencia web (solo lectura): `../AlivIACare/src/screens/paciente/`.
+
+## Cursor Cloud specific instructions
+
+- Node.js 22. Instalar con `npm ci` y, para e2e, `npx playwright install --with-deps chromium`. No hay secretos ni API: el mock local es el único modo.
+- Servidor: `npm run dev` deja Metro en el puerto **8083** y la web en `http://127.0.0.1:8083`. Sin `adb` el script sigue. No exportes `CI=1` al arrancar Metro: desactiva el recargado.
+- `expo-screen-capture` no publica `app.plugin.js`. No lo pongas en `plugins` de `app.json`; la protección de pantalla se usa en runtime (`AppLockGate`).
+- `npm test` incluye `sync-core`, que exige `AlivIACare/src` (o `ALIVIA_WEB_SRC`). Sin ese checkout, ese único test falla. La app no lo necesita para correr.
+- `npx tsc --noEmit` reporta errores de tipos ya presentes; no impiden Metro ni el resto de Vitest.
