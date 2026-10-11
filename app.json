@@ -45,7 +45,6 @@
       ],
       "expo-secure-store",
       "expo-local-authentication",
-      "expo-screen-capture",
       [
         "expo-image-picker",
         {
