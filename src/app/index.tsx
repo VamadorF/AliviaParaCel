@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { navigationRef } from '@/app/navigation/navigationRef';
 import { linking } from '@/app/navigation/linking';
+import { AppUpdateGate } from '@/features/app/AppUpdateGate';
 import { RootNavigator } from '@/app/navigation/RootNavigator';
 import i18n from '@/shared/i18n';
 import { ThemeProvider, useTheme } from '@/shared/theme/ThemeContext';
@@ -48,7 +49,9 @@ export default function App() {
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
-              <AppShell />
+              <AppUpdateGate>
+                <AppShell />
+              </AppUpdateGate>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

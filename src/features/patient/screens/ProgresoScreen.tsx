@@ -6,6 +6,7 @@ import { Card } from '@/shared/components/Card';
 import { Screen } from '@/shared/components/Screen';
 import { dailyPainSeries, PainChart } from '@/shared/charts/PainChart';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
+import { checkInSecondaryLine } from '@/features/patient/utils/checkin-summary';
 import { patientProgress } from '@/features/patient/utils/progress';
 import { formatDecimal } from '@/shared/format/es-cl';
 import { painLabel, painPlate } from '@/features/patient/utils/pain';
@@ -59,7 +60,9 @@ export function ProgresoScreen() {
         {progress.recent.length === 0 ? (
           <Text style={{ color: palette.textMuted }}>Sin registros anteriores todavía.</Text>
         ) : (
-          progress.recent.map((r) => (
+          progress.recent.map((r) => {
+            const secondary = checkInSecondaryLine(r);
+            return (
             <View key={r.id} style={[styles.row, { borderColor: palette.border }]}>
               <View
                 style={[styles.painDot, { backgroundColor: painPlate(r.pain) }]}
@@ -77,9 +80,13 @@ export function ProgresoScreen() {
                   {r.zones.join(' · ') || 'Sin zonas'}
                   {moodLabel(r.mood) ? ` · ${moodLabel(r.mood)}` : ''}
                 </Text>
+                {secondary ? (
+                  <Text style={{ color: palette.textMuted, fontSize: 12, marginTop: 4 }}>{secondary}</Text>
+                ) : null}
               </View>
             </View>
-          ))
+          );
+          })
         )}
       </Card>
     </Screen>

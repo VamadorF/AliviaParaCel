@@ -38,3 +38,48 @@ export const MOCK_WEATHER: MockWeather = {
     { id: 'd5', label: 'Vie', tempMin: 12, tempMax: 20, condition: 'nublado' },
   ],
 };
+
+/** MOB-27 · Clima ficticio por comuna (sin GPS). */
+export const MOCK_WEATHER_BY_COMMUNE: Record<string, MockWeather> = {
+  Santiago: MOCK_WEATHER,
+  Valparaíso: {
+    city: 'Valparaíso',
+    country: 'CL',
+    temperature: 18,
+    feelsLike: 17,
+    humidity: 62,
+    windKmh: 22,
+    condition: 'nublado',
+    updatedAt: '2026-06-01T10:00:00',
+    forecast: MOCK_WEATHER.forecast,
+  },
+};
+
+export type CheckInWeatherSnapshot = {
+  commune: string;
+  temperature: number;
+  condition: MockForecastDay['condition'];
+  /** ISO 8601 del instante en que se capturó con el check-in. */
+  capturedAt: string;
+};
+
+function normalizeCommuneKey(commune: string): string {
+  const trimmed = commune.trim();
+  if (!trimmed) return 'Santiago';
+  const hit = Object.keys(MOCK_WEATHER_BY_COMMUNE).find(
+    (key) => key.toLowerCase() === trimmed.toLowerCase(),
+  );
+  return hit ?? 'Santiago';
+}
+
+/** Instantánea ligera para guardar en cada check-in. */
+export function weatherSnapshotForCommune(commune: string, capturedAt: string): CheckInWeatherSnapshot {
+  const key = normalizeCommuneKey(commune);
+  const source = MOCK_WEATHER_BY_COMMUNE[key] ?? MOCK_WEATHER;
+  return {
+    commune: source.city,
+    temperature: source.temperature,
+    condition: source.condition,
+    capturedAt,
+  };
+}

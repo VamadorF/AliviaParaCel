@@ -12,6 +12,7 @@ import {
 import {
   communityAuthor,
   newCommunityPostId,
+  forumRejectMessage,
   persistCommunityPost,
   type ForumRejectReason,
 } from '@/features/patient/community/forum';
@@ -39,9 +40,10 @@ import { IconTile } from '@/shared/icons/AppIcon';
 import { useTheme } from '@/shared/theme/ThemeContext';
 
 const REJECT_COPY: Record<ForumRejectReason, string> = {
-  empty: 'Escribe algo antes de publicar.',
-  abusive: 'AlivIA moderó tu publicación: revisa las normas de convivencia.',
-  'missing-topic': 'Ese tema ya no está disponible.',
+  empty: forumRejectMessage('empty'),
+  abusive: forumRejectMessage('abusive'),
+  'missing-topic': forumRejectMessage('missing-topic'),
+  'rate-limit': forumRejectMessage('rate-limit'),
 };
 
 const REPORT_COPY: Record<ReportRejectReason, string> = {

@@ -45,6 +45,7 @@ describe('CAL-01 · mockPatientRepository (persistencia)', () => {
 
     const reloaded = await patient.loadBootstrap(demoUser.id, 'demo');
     expect(reloaded.checkIns[0].id).toBe('x');
+    expect(reloaded.checkIns[0].weatherAtCapture?.commune).toBe('Santiago');
   });
 
   it('saveBootstrap persiste entre cargas', async () => {

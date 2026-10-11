@@ -1,6 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useRef, useState } from 'react';
 import { FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { canWriteUserCache } from '@/features/auth/session/session';
+import { patientRepository } from '@/features/patient/api/patientApi';
+import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import {
   EMERGENCY_NOTICE,
   NO_MEDICAL_ADVICE_NOTICE,
@@ -11,9 +15,17 @@ import {
   saveAiSummaryNote,
 } from '@/features/patient/assistant/assistant';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
+import {
+  applyTeamMessagingDoctor,
+  messagingTeamDoctors,
+  resolveTeamMessagingDoctor,
+  teamChannelOpen,
+  teamMessagesForDoctor,
+} from '@/features/patient/messaging/team-doctor';
 import type { Message } from '@/features/patient/types';
 import { teamHeadline } from '@/features/patient/utils/profile';
 import { BetaBanner } from '@/shared/components/BetaBanner';
+import { Chip } from '@/shared/components/Chip';
 import { Screen } from '@/shared/components/Screen';
 import { AppIcon, IconTile } from '@/shared/icons/AppIcon';
 import { useTheme } from '@/shared/theme/ThemeContext';
@@ -41,6 +53,7 @@ function placeBaseMessage(message: Message): Channel | 'patient' {
 export function AliviaScreen() {
   const { palette } = useTheme();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data, sendTeamMessage } = usePatientSession();
   const [channel, setChannel] = useState<Channel>('assistant');
   const [draft, setDraft] = useState('');
@@ -54,16 +67,33 @@ export function AliviaScreen() {
     [user?.name, data.checkIns],
   );
 
-  const teamAvailable = data.doctorLinked && data.messagingEnabled;
-  const doctorName = data.appointment?.doctorName ?? null;
+  const messagingDoctors = useMemo(() => messagingTeamDoctors(data), [data]);
+  const selectedDoctor = useMemo(() => resolveTeamMessagingDoctor(data), [data]);
+  const teamAvailable = teamChannelOpen(data);
+  const doctorName = selectedDoctor?.name ?? data.appointment?.doctorName ?? null;
   const teamLine = teamHeadline(data.team);
-  const linkedLabel = teamLine
-    ? teamLine
-    : data.doctorLinked
-      ? doctorName
-        ? `Médico vinculado: ${doctorName}`
-        : 'Médico vinculado'
-      : 'Sin médico vinculado';
+  const linkedLabel = selectedDoctor
+    ? `Conversando con ${selectedDoctor.name}`
+    : teamLine
+      ? teamLine
+      : data.doctorLinked
+        ? doctorName
+          ? `Médico vinculado: ${doctorName}`
+          : 'Médico vinculado'
+        : 'Sin médico vinculado';
+
+  const pickMessagingDoctor = (doctorId: string) => {
+    if (!user) return;
+    void patientRepository.loadBootstrap(user.id, user.profile).then((current) => {
+      const next = applyTeamMessagingDoctor(current, doctorId);
+      if (next === current) return;
+      void patientRepository.saveBootstrap(user.id, next).then((saved) => {
+        if (canWriteUserCache(user.id)) {
+          queryClient.setQueryData(patientQueryKeys.bootstrap(user.id), saved);
+        }
+      });
+    });
+  };
 
   // El asistente sigue en esta sesión (MOB-09). El equipo persiste (MOB-10); sin red queda en la cola (MOB-16).
   const messages = useMemo(() => {
@@ -78,8 +108,9 @@ export function AliviaScreen() {
     byChannel[legacy].push(...unscopedPatient);
     const merge = (c: Channel) =>
       [...byChannel[c], ...sent[c]].sort((a, b) => a.at.localeCompare(b.at));
-    return { assistant: merge('assistant'), team: merge('team') };
-  }, [data.messages, sent, teamAvailable]);
+    const team = teamMessagesForDoctor(merge('team'), selectedDoctor?.id ?? null);
+    return { assistant: merge('assistant'), team };
+  }, [data.messages, sent, teamAvailable, selectedDoctor?.id]);
 
   const showLock = channel === 'team' && !teamAvailable;
   const list = messages[channel];
@@ -109,7 +140,7 @@ export function AliviaScreen() {
     }
     sendingRef.current = true;
     setSending(true);
-    void sendTeamMessage(body, at.toISOString())
+    void sendTeamMessage(body, at.toISOString(), selectedDoctor?.id)
       .then((status) => {
         if (status === 'empty') return;
         setDraft('');
@@ -207,6 +238,25 @@ export function AliviaScreen() {
           <Text style={{ color: palette.textMuted, fontSize: 13, fontWeight: '600', lineHeight: 18 }}>
             {NO_MEDICAL_ADVICE_NOTICE}
           </Text>
+        </View>
+      ) : null}
+
+      {channel === 'team' && teamAvailable && messagingDoctors.length > 1 ? (
+        <View style={styles.doctorPicker} testID="team-doctor-picker">
+          <Text style={{ color: palette.textMuted, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>
+            ¿Con quién de tu equipo quieres conversar?
+          </Text>
+          <View style={styles.doctorRow}>
+            {messagingDoctors.map((doctor) => (
+              <Chip
+                key={doctor.id}
+                label={doctor.name}
+                selected={selectedDoctor?.id === doctor.id}
+                onPress={() => pickMessagingDoctor(doctor.id)}
+                testID={`team-doctor-${doctor.id}`}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
 
@@ -406,6 +456,8 @@ const styles = StyleSheet.create({
   },
   notice: { marginBottom: 12, gap: 4 },
   noticeLink: { minHeight: 48, justifyContent: 'center' },
+  doctorPicker: { marginBottom: 12 },
+  doctorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   simLabel: { fontSize: 11, fontWeight: '800', marginBottom: 4 },
   call131: { minHeight: 48, justifyContent: 'center' },
   summaryBox: { marginBottom: 8 },

@@ -1,7 +1,9 @@
 import type { CheckInDose } from '@/shared/core/checkin-dose';
 import type { CheckInNotes, GiDetail } from '@/shared/core/checkin-row';
 import type { PainSite } from '@/features/patient/utils/body-map';
+import type { PainDescriptorId } from '@/features/patient/utils/pain-descriptors';
 import type { ReliefAction } from '@/shared/data/trigger-catalog';
+import type { CheckInWeatherSnapshot } from '@/shared/mocks/weather.mock';
 
 export type { ReliefAction, ReliefLevel } from '@/shared/data/trigger-catalog';
 
@@ -36,6 +38,10 @@ export type CheckInRecord = {
   zones: string[];
   /** PAC-16 · Zonas con lateralidad y vista. Ausente en registros antiguos. */
   painSites?: PainSite[];
+  /** PAC-17 · Descriptores opcionales del dolor. */
+  painDescriptors?: PainDescriptorId[];
+  /** MOB-27 · Clima mock de la comuna al guardar (sin GPS). */
+  weatherAtCapture?: CheckInWeatherSnapshot;
   mood?: string;
   sleep?: string;
   emergency: boolean;
@@ -135,6 +141,8 @@ export type Message = {
   at: string;
   /** MOB-10 · Canal explícito. Ausente en mensajes anteriores: se infiere por `from`. */
   channel?: 'assistant' | 'team';
+  /** PAC-12 · Médico del equipo destinatario. Ausente en mensajes anteriores. */
+  teamDoctorId?: string;
   /** MOB-16 · Ausente = ya está en el repositorio. */
   syncStatus?: 'pending';
 };
@@ -206,6 +214,8 @@ export type CareTeamMember = {
    * Ausente: ya estaba en el equipo y no se muestra el aviso de ingreso.
    */
   newlyAccepted?: true;
+  /** PAC-12 · Si es true, el paciente puede escribirle por mensajería. */
+  messagingEnabled?: boolean;
 };
 
 export type LinkRequestStatus = 'Pendiente' | 'Aprobado' | 'Rechazado';
@@ -253,6 +263,10 @@ export type PatientBootstrap = {
   photoUri?: string | null;
   /** MOB-07 · Equipo tratante. Ausente = ninguno. */
   team?: CareTeamMember[];
+  /** PAC-12 · Médico del equipo seleccionado para mensajería (id/RUT). */
+  teamMessagingDoctorId?: string | null;
+  /** MOB-27 · Comuna de la ficha para clima mock al check-in. */
+  commune?: string | null;
   /** MOB-07 · Solicitudes de vinculación. Ausente = ninguna. */
   linkRequests?: LinkRequest[];
   /**
