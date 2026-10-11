@@ -165,7 +165,8 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
     name: 'ALIVIAMVP',
     phone: '+56 2 2555 0100',
   },
-  // Misma ficha que la web: patología, contacto y los dos médicos vinculados (sin vencimiento).
+  // Misma ficha que la web: patología, contacto y los médicos ya vinculados (sin vencimiento).
+  // Dra. Invitada Soto acaba de aceptar (CLI-08). El vínculo es temporal: el perfil muestra la fecha.
   pathology: 'Fibromialgia + Depresión',
   email: 'constanza@correo.cl',
   phone: '',
@@ -173,6 +174,13 @@ export const DEMO_BOOTSTRAP: PatientBootstrap = {
   team: [
     { id: '12345678-5', name: 'Dr. Jesús Fernández', specialty: 'Especialista en Dolor Crónico' },
     { id: '13456789-9', name: 'Dra. Constanza Elizondo', specialty: 'Reumatología' },
+    {
+      id: '20333444-3',
+      name: 'Dra. Invitada Soto',
+      specialty: 'Neurología',
+      expiresAt: new Date(Date.now() + 18 * 86400000).toISOString(),
+      newlyAccepted: true,
+    },
   ],
   // La web siembra la bandeja vacía. Esta solicitud deja aprobar o rechazar en el mock.
   // El vencimiento viene en el fixture: la pantalla solo lo muestra si está.

@@ -22,9 +22,10 @@ export function authorSeesHidden(post: ForumPost, viewerAuthor: string): boolean
   return post.hidden === true && post.author === viewerAuthor;
 }
 
-/** La autora sigue viendo la suya. El resto no ve una publicación ocultada. */
+/** La autora sigue viendo la suya. El resto no ve una ocultada ni una en revisión. */
 export function visibleTo(post: ForumPost, viewerAuthor: string): boolean {
-  return post.hidden !== true || post.author === viewerAuthor;
+  const held = post.hidden === true || post.review === 'en_revision';
+  return !held || post.author === viewerAuthor;
 }
 
 export function shownThreads(posts: ForumPost[], viewerAuthor: string): ForumPost[] {

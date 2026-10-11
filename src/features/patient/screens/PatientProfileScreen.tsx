@@ -6,6 +6,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { ConsentCard } from '@/features/patient/components/ConsentCard';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
 import {
+  useAskDoctorToLeaveMutation,
   useDecideLinkRequestMutation,
   useRequestAccountDeletionMutation,
   useResetDemoDataMutation,
@@ -28,6 +29,11 @@ import {
   teamExpiryText,
   teamMemberLine,
 } from '@/features/patient/utils/profile';
+import {
+  acceptedTeamRows,
+  ASK_TO_LEAVE,
+  SOLE_DOCTOR_EXPLANATION,
+} from '@/features/patient/utils/team-join';
 import { BetaBanner } from '@/shared/components/BetaBanner';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
@@ -48,6 +54,7 @@ export function PatientProfileScreen() {
   const { data } = usePatientSession();
   const resetDemo = useResetDemoDataMutation();
   const decideLink = useDecideLinkRequestMutation();
+  const leaveTeam = useAskDoctorToLeaveMutation();
   const updateContact = useUpdateContactMutation();
   const setPhoto = useSetPhotoMutation();
   const deleteAccount = useRequestAccountDeletionMutation();
@@ -69,6 +76,7 @@ export function PatientProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<PerfilStackParamList>>();
 
   const team = data.team ?? [];
+  const notices = new Map(acceptedTeamRows(team).map((row) => [row.id, row]));
   const requests = data.linkRequests ?? [];
   const meds = activeMedications(data.medications);
   const hint = { color: palette.textMuted, fontSize: 12, lineHeight: 18, marginTop: -8, marginBottom: 12 };
@@ -259,11 +267,46 @@ export function PatientProfileScreen() {
         {team.length === 0 ? (
           <Text style={{ color: palette.textMuted, lineHeight: 21 }}>Sin médico vinculado</Text>
         ) : (
-          team.map((member) => (
-            <Text key={member.id} style={{ color: palette.text, lineHeight: 22, marginBottom: 8 }}>
-              {teamMemberLine(member)}
-            </Text>
-          ))
+          team.map((member) => {
+            const notice = notices.get(member.id);
+            return (
+              <View key={member.id} style={{ marginBottom: 8 }}>
+                <Text style={{ color: palette.text, lineHeight: 22 }}>{teamMemberLine(member)}</Text>
+                {notice ? (
+                  <View testID={`nuevo-en-tu-equipo-${member.id}`}>
+                    <Text style={{ fontWeight: '700', color: palette.text, marginTop: 6, lineHeight: 21 }}>
+                      {notice.notice}
+                    </Text>
+                    <View style={{ marginTop: 8 }}>
+                      <Button
+                        label={ASK_TO_LEAVE}
+                        variant="ghost"
+                        disabled={leaveTeam.isPending || Boolean(data.readOnlyReason)}
+                        testID={`leave-team-${member.id}`}
+                        onPress={() =>
+                          leaveTeam.mutate(member.id, {
+                            onSuccess: (result) => {
+                              if (!result.ok) {
+                                setNotice({
+                                  text:
+                                    result.reason === 'sole'
+                                      ? SOLE_DOCTOR_EXPLANATION
+                                      : 'No se pudo actualizar el equipo',
+                                  error: true,
+                                });
+                                return;
+                              }
+                              setNotice({ text: `${member.name} dejó tu equipo`, error: false });
+                            },
+                          })
+                        }
+                      />
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })
         )}
       </Card>
 

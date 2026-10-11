@@ -1,4 +1,5 @@
 import type { PatientRepository } from '@/features/patient/api/patientRepository';
+import { matchesCrisisSignal } from '@/features/patient/community/crisis-signals';
 import { moderate } from '@/features/patient/community/moderate';
 import type { ForumPost, PatientBootstrap } from '@/features/patient/types';
 import type { PatientProfileKind } from '@/shared/mocks/users.mock';
@@ -54,12 +55,14 @@ export function appendCommunityPost(
     const parent = data.posts.find((post) => post.id === input.parentId && !post.parentId);
     if (!parent) return { ok: false, reason: 'missing-topic' };
   }
+  const text = input.text.trim();
   const post: ForumPost = {
     id: input.id,
     author: input.author.trim() || 'Paciente',
-    excerpt: input.text.trim(),
+    excerpt: text,
     at: input.at,
     parentId: input.parentId,
+    ...(matchesCrisisSignal(text) ? { review: 'en_revision' as const } : {}),
   };
   return { ok: true, data: { ...data, posts: [post, ...data.posts] } };
 }

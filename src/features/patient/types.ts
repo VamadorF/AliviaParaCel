@@ -142,6 +142,8 @@ export type ForumPost = {
   hidden?: boolean;
   /** COM-01 · Reportes recibidos. Ausente = ninguno. */
   reportCount?: number;
+  /** COM-06 · Ausente = visible para la comunidad. `en_revision` solo la ve quien la escribió. */
+  review?: 'en_revision';
 };
 
 /** COM-01 · Misma forma que ForumReportRow de la web. La cola de moderación no vive en el móvil. */
@@ -185,6 +187,11 @@ export type CareTeamMember = {
   specialty: string;
   /** ISO 8601. Ausente o null: vínculo permanente, sin fecha de término. */
   expiresAt?: string | null;
+  /**
+   * CLI-08 · El médico aceptó sumarse. El perfil avisa mientras el vínculo siga vigente.
+   * Ausente: ya estaba en el equipo y no se muestra el aviso de ingreso.
+   */
+  newlyAccepted?: true;
 };
 
 export type LinkRequestStatus = 'Pendiente' | 'Aprobado' | 'Rechazado';

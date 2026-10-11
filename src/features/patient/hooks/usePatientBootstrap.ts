@@ -16,6 +16,7 @@ import {
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
 import { flushOutbox } from '@/features/patient/sync/outbox';
 import type { ConsentAction, PatientBootstrap, PreConsultInput } from '@/features/patient/types';
+import { persistAskDoctorToLeave } from '@/features/patient/utils/team-join';
 import { asyncStoragePort } from '@/shared/storage/asyncStorageAdapter';
 
 function cacheBootstrap(
@@ -104,6 +105,19 @@ export function useDecideLinkRequestMutation() {
       decidePatientLinkRequest(user!.id, user!.profile, input.requestId, input.status),
     onSuccess: (data) => {
       cacheBootstrap(queryClient, user?.id, data);
+    },
+  });
+}
+
+export function useAskDoctorToLeaveMutation() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (doctorId: string) =>
+      persistAskDoctorToLeave(patientRepository, user!.id, user!.profile, doctorId),
+    onSuccess: (result) => {
+      if (result.ok) cacheBootstrap(queryClient, user?.id, result.data);
     },
   });
 }

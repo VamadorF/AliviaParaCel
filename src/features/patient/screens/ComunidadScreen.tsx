@@ -1,10 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { canWriteUserCache } from '@/features/auth/session/session';
 import { patientRepository } from '@/features/patient/api/patientApi';
 import { patientQueryKeys } from '@/features/patient/api/patientQueryKeys';
+import {
+  COMMUNITY_MONITOR_NOTICE,
+  MODERATOR_REVIEW_COPY,
+} from '@/features/patient/community/crisis-signals';
 import {
   communityAuthor,
   newCommunityPostId,
@@ -65,6 +69,9 @@ export function ComunidadScreen() {
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
 
   const viewer = user ? communityAuthor(user.name) : '';
+  const crisisHelp = data.posts.some(
+    (post) => post.review === 'en_revision' && post.author === viewer,
+  );
   const threads = useMemo(() => shownThreads(data.posts, viewer), [data.posts, viewer]);
   const opened = activeId
     ? data.posts.find((post) => post.id === activeId && !post.parentId)
@@ -186,6 +193,13 @@ export function ComunidadScreen() {
           Comparte experiencias, no indicaciones médicas. No reemplaza la consulta con tu equipo tratante.
         </Text>
       </View>
+      <View
+        style={[styles.disclaimer, { backgroundColor: palette.surface, borderColor: palette.border }]}
+        testID="community-monitor"
+      >
+        <MonitorNotice />
+      </View>
+      {crisisHelp ? <CrisisHelpCard /> : null}
 
       {feedback ? (
         <Text
@@ -221,6 +235,7 @@ export function ComunidadScreen() {
             <Text style={{ color: palette.textMuted, fontSize: 12, marginTop: 8 }}>
               {active.author} · {formatWhen(active.at)}
             </Text>
+            <ReviewMark post={active} />
             {moderation(active)}
           </Card>
           {replies.length === 0 ? (
@@ -235,6 +250,7 @@ export function ComunidadScreen() {
                 <Text style={{ color: palette.textMuted, fontSize: 12, marginTop: 8 }}>
                   {formatWhen(reply.at)}
                 </Text>
+                <ReviewMark post={reply} />
                 {moderation(reply)}
               </Card>
             ))
@@ -284,6 +300,7 @@ export function ComunidadScreen() {
                     {formatWhen(post.at)} · {replyCount}{' '}
                     {replyCount === 1 ? 'respuesta' : 'respuestas'}
                   </Text>
+                  <ReviewMark post={post} />
                 </Pressable>
                 {moderation(post)}
               </Card>
@@ -298,6 +315,84 @@ export function ComunidadScreen() {
         </View>
       )}
     </Screen>
+  );
+}
+
+function openTel(href: 'tel:131' | 'tel:*4141') {
+  Linking.openURL(href).catch(() => {});
+}
+
+function MonitorNotice() {
+  const { palette } = useTheme();
+  const [before, after] = COMMUNITY_MONITOR_NOTICE.split('131');
+  const rest = after.split('*4141');
+  return (
+    <Text style={{ color: palette.text, lineHeight: 21 }}>
+      {before}
+      <Text
+        accessibilityRole="link"
+        accessibilityLabel="Llamar al 131"
+        onPress={() => openTel('tel:131')}
+        style={{ fontWeight: '800', color: palette.textDanger }}
+      >
+        131
+      </Text>
+      {rest[0]}
+      <Text
+        accessibilityRole="link"
+        accessibilityLabel="Llamar al *4141"
+        onPress={() => openTel('tel:*4141')}
+        style={{ fontWeight: '800', color: palette.textDanger }}
+      >
+        *4141
+      </Text>
+      {rest[1]}
+    </Text>
+  );
+}
+
+function CrisisHelpCard() {
+  const { palette } = useTheme();
+  return (
+    <View
+      accessibilityRole="alert"
+      testID="crisis-ayuda"
+      style={[styles.disclaimer, { backgroundColor: palette.surface, borderColor: palette.border }]}
+    >
+      <Text style={{ fontWeight: '800', color: palette.text, lineHeight: 22 }}>
+        <Text
+          accessibilityRole="link"
+          accessibilityLabel="Llamar al 131, urgencias"
+          onPress={() => openTel('tel:131')}
+          style={{ color: palette.textDanger }}
+        >
+          131
+        </Text>
+        <Text style={{ fontWeight: '600', color: palette.textMuted }}> · urgencias</Text>
+      </Text>
+      <Text style={{ fontWeight: '800', color: palette.text, lineHeight: 22, marginTop: 6 }}>
+        <Text
+          accessibilityRole="link"
+          accessibilityLabel="Llamar al *4141"
+          onPress={() => openTel('tel:*4141')}
+          style={{ color: palette.textDanger }}
+        >
+          *4141
+        </Text>
+        <Text style={{ fontWeight: '600', color: palette.textMuted }}> · Línea de Prevención del Suicidio</Text>
+      </Text>
+      <Text style={{ color: palette.textMuted, marginTop: 8, lineHeight: 20 }}>{MODERATOR_REVIEW_COPY}</Text>
+    </View>
+  );
+}
+
+function ReviewMark({ post }: { post: ForumPost }) {
+  const { palette } = useTheme();
+  if (post.review !== 'en_revision') return null;
+  return (
+    <Text style={{ marginTop: 4, fontSize: 11, fontWeight: '800', color: palette.textWarning }}>
+      En revisión
+    </Text>
   );
 }
 
