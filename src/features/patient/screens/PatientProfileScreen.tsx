@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { ConsentCard } from '@/features/patient/components/ConsentCard';
 import { usePatientSession } from '@/features/patient/context/PatientSessionContext';
@@ -16,9 +16,15 @@ import { shareRecordFile } from '@/features/patient/profile/share-record';
 import type { LinkRequest } from '@/features/patient/types';
 import { activeMedications, medicationDetail, medicationTitle } from '@/features/patient/utils/medications';
 import {
-  ACCOUNT_DELETION_MESSAGE,
+  ACCOUNT_RETENTION_NOTE,
   applyContact,
   buildRecordFile,
+  DELETE_ACCOUNT_INTRO,
+  DELETE_ACCOUNT_RECORD,
+  DELETE_ACCOUNT_RECORD_REST,
+  DELETE_ACCOUNT_RECORD_STRONG,
+  DELETE_ACCOUNT_RETURN,
+  DELETE_ACCOUNT_TITLE,
   teamExpiryText,
   teamMemberLine,
 } from '@/features/patient/utils/profile';
@@ -47,6 +53,7 @@ export function PatientProfileScreen() {
   const deleteAccount = useRequestAccountDeletionMutation();
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const sourceEmail = data.email ?? '';
   const sourcePhone = data.phone ?? '';
   const [draft, setDraft] = useState<{
@@ -121,7 +128,9 @@ export function PatientProfileScreen() {
 
   const onDeleteAccount = () => {
     deleteAccount.mutate(undefined, {
-      onSuccess: () => setNotice({ text: ACCOUNT_DELETION_MESSAGE, error: false }),
+      onSuccess: () => {
+        signOut();
+      },
     });
   };
 
@@ -380,15 +389,43 @@ export function PatientProfileScreen() {
         </Text>
         <Button label="Descargar mi ficha" variant="ghost" onPress={onDownload} testID="record-download" />
         <View style={{ height: 8 }} />
-        <Button
-          label="Eliminar mi cuenta: pendiente de definición legal"
-          variant="ghost"
-          onPress={onDeleteAccount}
-          disabled={deleteAccount.isPending}
-          testID="delete-account"
-        />
+        {confirmingDelete ? (
+          <View testID="delete-account-dialog">
+            <Text accessibilityRole="header" style={{ fontWeight: '800', fontSize: 18, color: palette.text }}>
+              {DELETE_ACCOUNT_TITLE}
+            </Text>
+            <Text style={{ color: palette.text, lineHeight: 21, marginTop: 8 }}>{DELETE_ACCOUNT_INTRO}</Text>
+            <Text style={{ color: palette.text, lineHeight: 21, marginTop: 8 }}>
+              {DELETE_ACCOUNT_RECORD}
+              <Text style={{ fontWeight: '800' }}>{DELETE_ACCOUNT_RECORD_STRONG}</Text>
+              {DELETE_ACCOUNT_RECORD_REST}
+            </Text>
+            <Text style={{ color: palette.text, lineHeight: 21, marginTop: 8 }}>{DELETE_ACCOUNT_RETURN}</Text>
+            <View style={{ height: 12 }} />
+            <Button
+              label="Cancelar"
+              variant="ghost"
+              onPress={() => setConfirmingDelete(false)}
+              testID="delete-account-cancel"
+            />
+            <View style={{ height: 8 }} />
+            <Button
+              label="Eliminar mi cuenta"
+              onPress={onDeleteAccount}
+              disabled={deleteAccount.isPending}
+              testID="delete-account-confirm"
+            />
+          </View>
+        ) : (
+          <Button
+            label="Eliminar mi cuenta"
+            variant="ghost"
+            onPress={() => setConfirmingDelete(true)}
+            testID="delete-account"
+          />
+        )}
         <Text style={{ color: palette.textMuted, marginTop: 8, lineHeight: 21 }}>
-          {ACCOUNT_DELETION_MESSAGE}
+          {ACCOUNT_RETENTION_NOTE}
         </Text>
       </Card>
       {user?.profile === 'demo' ? (

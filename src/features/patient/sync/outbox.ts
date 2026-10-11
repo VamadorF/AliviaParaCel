@@ -23,7 +23,7 @@ export type SubmitResult =
   | { status: 'pending'; queue: OutboxItem[] }
   | { status: 'sent'; data: PatientBootstrap; queue: OutboxItem[] };
 
-function storageKey(userId: string) {
+export function outboxStorageKey(userId: string) {
   return `${STORAGE_PREFIX}${userId}`;
 }
 
@@ -48,7 +48,7 @@ function isOutboxItem(value: unknown): value is OutboxItem {
 }
 
 export async function loadOutbox(storage: StoragePort, userId: string): Promise<OutboxItem[]> {
-  const raw = await storage.getItem(storageKey(userId));
+  const raw = await storage.getItem(outboxStorageKey(userId));
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -60,7 +60,7 @@ export async function loadOutbox(storage: StoragePort, userId: string): Promise<
 }
 
 export async function saveOutbox(storage: StoragePort, userId: string, items: OutboxItem[]): Promise<void> {
-  const key = storageKey(userId);
+  const key = outboxStorageKey(userId);
   if (items.length === 0) {
     await storage.removeItem(key);
     return;

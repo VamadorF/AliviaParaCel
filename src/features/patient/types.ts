@@ -232,4 +232,9 @@ export type PatientBootstrap = {
   team?: CareTeamMember[];
   /** MOB-07 · Solicitudes de vinculación. Ausente = ninguna. */
   linkRequests?: LinkRequest[];
+  /**
+   * PAC-15 · Ausente = cuenta vigente. Si está, la ficha quedó solo lectura.
+   * El texto es "Cuenta del paciente eliminada".
+   */
+  readOnlyReason?: string;
 };

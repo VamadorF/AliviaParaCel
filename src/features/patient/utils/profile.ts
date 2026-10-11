@@ -1,15 +1,38 @@
 import type {
   CareTeamMember,
   LinkRequest,
+  Message,
   PatientBootstrap,
 } from '@/features/patient/types';
+import { communityAuthor } from '@/features/patient/community/forum';
+import { applyConsent } from '@/features/patient/utils/consent';
 import { activeMedications } from '@/features/patient/utils/medications';
 
 const DAY_MS = 86400000;
 
-/** PAC-15 está bloqueada: la Ley 20.584 no define aún qué se borra. */
-export const ACCOUNT_DELETION_MESSAGE =
-  'La eliminación está pendiente de definición legal (Ley 20.584). Tus datos no se borran.';
+/** Un abogado debe confirmar desde cuándo se cuentan los 15 años. */
+export const ACCOUNT_RETENTION_NOTE =
+  'Un abogado debe confirmar desde cuándo se cuentan los 15 años.';
+
+export const ACCOUNT_DELETED_MARK = 'Cuenta del paciente eliminada';
+
+export const DELETED_POST_TEXT = 'Publicación eliminada';
+
+export const DELETE_ACCOUNT_TITLE = '¿Eliminar tu cuenta?';
+
+export const DELETE_ACCOUNT_INTRO =
+  'Se borrarán tu acceso, tu foto, tus datos de contacto, tus preferencias, tu conversación con el Asistente AlivIA y el texto de tus publicaciones en la Comunidad.';
+
+export const DELETE_ACCOUNT_RECORD =
+  'Tu ficha clínica (tus registros compartidos, tratamiento, notas y mensajes con tu equipo) ';
+
+export const DELETE_ACCOUNT_RECORD_STRONG = 'no se borra';
+
+export const DELETE_ACCOUNT_RECORD_REST =
+  ': la ley obliga a tu centro de salud a conservarla al menos 15 años. Tu equipo podrá seguir consultándola, pero no se agregarán datos nuevos.';
+
+export const DELETE_ACCOUNT_RETURN =
+  'Si más adelante te invitan de nuevo con tu RUT, recuperarás el acceso a tu ficha.';
 
 function formatAccessDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CL', {
@@ -110,9 +133,36 @@ export function applyPhoto(data: PatientBootstrap, photoUri: string | null): Pat
   return { ...data, photoUri };
 }
 
-/** No borra nada. PAC-15 sigue bloqueada. */
-export function requestAccountDeletion(data: PatientBootstrap): PatientBootstrap {
-  return data;
+function isAssistantMessage(message: Message): boolean {
+  if (message.channel === 'team' || message.from === 'team') return false;
+  return message.channel === 'assistant' || message.from === 'alivia';
+}
+
+/**
+ * PAC-15 · Borra acceso local no clínico y deja la ficha en solo lectura.
+ * Un abogado debe confirmar desde cuándo se cuentan los 15 años.
+ */
+export function requestAccountDeletion(
+  data: PatientBootstrap,
+  input: { authorName: string; at: string; reporterRut?: string },
+): PatientBootstrap {
+  const author = communityAuthor(input.authorName);
+  const reporter = input.reporterRut?.trim();
+  const next: PatientBootstrap = {
+    ...data,
+    photoUri: null,
+    email: '',
+    phone: '',
+    messages: data.messages.filter((message) => !isAssistantMessage(message)),
+    posts: data.posts.map((post) =>
+      post.author === author ? { ...post, excerpt: DELETED_POST_TEXT } : post,
+    ),
+    forumReports: data.forumReports?.map((report) =>
+      reporter && report.reporterRut === reporter ? { ...report, reporterRut: 'anónimo' } : report,
+    ),
+    readOnlyReason: ACCOUNT_DELETED_MARK,
+  };
+  return applyConsent(next, 'revocado', input.at);
 }
 
 /** JSON local con lo que ya tiene el mock. No llama a un servidor FHIR. */

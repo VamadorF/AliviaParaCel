@@ -69,7 +69,7 @@ export type PatientRepository = {
     photoUri: string | null,
   ) => Promise<PatientBootstrap>;
   /**
-   * PAC-15: no borra el bootstrap. La eliminación sigue pendiente de definición legal.
+   * PAC-15: borra lo no clínico, revoca el consentimiento y deja la ficha en solo lectura.
    */
   requestAccountDeletion: (
     userId: string,

@@ -15,8 +15,11 @@ import {
   applyContact,
   applyPhoto,
   decideLinkRequest as applyLinkDecision,
-  requestAccountDeletion as keepAccount,
+  requestAccountDeletion as applyAccountDeletion,
 } from '@/features/patient/utils/profile';
+import { reminderStorageKey } from '@/features/patient/notifications/reminders';
+import { outboxStorageKey } from '@/features/patient/sync/outbox';
+import { findUserById } from '@/shared/mocks/users.mock';
 
 const STORAGE_PREFIX = '@alivia/patient-bootstrap/v1/';
 
@@ -32,6 +35,10 @@ function parseBootstrap(raw: string): PatientBootstrap | null {
   } catch {
     return null;
   }
+}
+
+function isReadOnly(data: PatientBootstrap) {
+  return Boolean(data.readOnlyReason);
 }
 
 export type MockPatientRepositoryOptions = {
@@ -68,6 +75,8 @@ export function createMockPatientRepository({
 
     async saveBootstrap(userId, data) {
       await wait();
+      const stored = parseBootstrap((await storage.getItem(storageKey(userId))) ?? '');
+      if (stored && isReadOnly(stored)) return cloneBootstrap(stored);
       const next = cloneBootstrap(data);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return next;
@@ -76,6 +85,7 @@ export function createMockPatientRepository({
     async appendCheckIn(userId, profile, record) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       // MOB-06: con el consentimiento revocado el registro queda en el teléfono, marcado como no compartido.
       const next = {
         ...current,
@@ -88,6 +98,7 @@ export function createMockPatientRepository({
     async setConsent(userId, profile, action, at) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       const next = applyConsent(current, action, at);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
       return cloneBootstrap(next);
@@ -96,6 +107,7 @@ export function createMockPatientRepository({
     async acknowledgeInstruction(userId, profile, at) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       const next = acknowledgeInstruction(current, at);
       if (next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
@@ -105,6 +117,7 @@ export function createMockPatientRepository({
     async submitPreConsult(userId, profile, input, at) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       const next = applyPreConsult(current, input, at);
       if (next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
@@ -122,6 +135,7 @@ export function createMockPatientRepository({
     async decideLinkRequest(userId, profile, requestId, status) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       const next = applyLinkDecision(current, requestId, status);
       if (next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
@@ -131,6 +145,7 @@ export function createMockPatientRepository({
     async updateContact(userId, profile, email, phone) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       const result = applyContact(current, email, phone);
       if (!result.ok || result.next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(result.next));
@@ -140,6 +155,7 @@ export function createMockPatientRepository({
     async setPhoto(userId, profile, photoUri) {
       await wait();
       const current = await readOrSeed(userId, profile);
+      if (isReadOnly(current)) return cloneBootstrap(current);
       const next = applyPhoto(current, photoUri);
       if (next === current) return cloneBootstrap(current);
       await storage.setItem(storageKey(userId), JSON.stringify(next));
@@ -149,7 +165,16 @@ export function createMockPatientRepository({
     async requestAccountDeletion(userId, profile) {
       await wait();
       const current = await readOrSeed(userId, profile);
-      return cloneBootstrap(keepAccount(current));
+      const user = findUserById(userId);
+      const next = applyAccountDeletion(current, {
+        authorName: user?.name ?? '',
+        reporterRut: user?.rut,
+        at: new Date().toISOString(),
+      });
+      await storage.setItem(storageKey(userId), JSON.stringify(next));
+      await storage.removeItem(reminderStorageKey(userId));
+      await storage.removeItem(outboxStorageKey(userId));
+      return cloneBootstrap(next);
     },
   };
 }
